@@ -6,7 +6,7 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "db:start": "supabase start -x studio,imgproxy,logflare,vector,edge-runtime,storage-api,supavisor,mailpit,postgres-meta,realtime",
+    "db:start": "supabase start -x studio,imgproxy,logflare,vector,edge-runtime,supavisor,mailpit,postgres-meta,realtime",
     "db:reset": "supabase db reset",
     "test:db": "supabase test db",
     "test:node": "node --test \"tests/**/*.test.ts\" \"packages/*/test/**/*.test.ts\" \"apps/*/test/**/*.test.ts\"",

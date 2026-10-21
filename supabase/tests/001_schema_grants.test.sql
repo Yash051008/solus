@@ -61,7 +61,15 @@ select is(
        'onboard_organisation', 'update_distributor_settings', 'create_branch', 'create_territory',
        'create_warehouse', 'set_warehouse_active', 'upsert_my_profile', 'registration_directory',
        'register_retailer', 'request_distributor', 'decide_customer', 'request_to_join',
-       'decide_join_request', 'kyc_level', 'check_geofence')),
+       'decide_join_request', 'kyc_level', 'check_geofence',
+       -- Phase 4 helpers + commands
+       'visible_warehouse_ids', 'my_carrier_location_ids', 'visible_shipment_ids', 'visible_order_ids',
+       'create_brand', 'create_sku', 'add_sku_uom', 'set_sku_active', 'publish_price_list',
+       'record_receipt', 'request_adjustment', 'decide_adjustment',
+       'create_transfer', 'dispatch_transfer', 'receive_transfer', 'resolve_transfer_shortage',
+       'place_order', 'decide_split', 'cancel_order', 'create_batch', 'mark_batch_packed', 'dispatch_batch',
+       'accept_dispatch', 'decline_dispatch', 'record_delivery', 'confirm_delivery', 'dispute_delivery',
+       'start_return', 'confirm_return', 'close_shipment')),
   null,
   'authenticated can execute only allow-listed functions (no ledger primitives, no adapter-only functions)'
 );

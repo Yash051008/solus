@@ -315,3 +315,100 @@ begin
   end loop;
 end;
 $$;
+
+-- Phase 4 demo flows, executed through the real app.* commands as the acting users (so every seed run
+-- also proves the pull flow end to end). Uses SKUs/shops the pgTAP fixtures don't count against.
+create function pg_temp.act_as(p_handle text) returns void language sql as $$
+  select set_config('request.jwt.claims',
+    json_build_object('sub', pg_temp.usr(p_handle), 'role', 'authenticated')::text, false)
+$$;
+create function pg_temp.sku(p_code text) returns uuid language sql stable as $$ select id from public.skus where code = p_code $$;
+create function pg_temp.wh(p_name text) returns uuid language sql stable as $$ select id from public.warehouses where name = p_name $$;
+
+do $$
+declare
+  r record;
+  v_order jsonb;
+  v_order_id uuid;
+  v_batch uuid;
+  v_shipment uuid;
+  v_lines jsonb;
+  v_photo text;
+begin
+  for r in select * from (values
+    ('lagos-prime',   'retailer05', 'retailer-05', 'Ikeja Main',   'lp.wh.ikeja', 'lp.driver1', 6.5900, 3.3400, 4, 'retailer06', 'retailer-06'),
+    ('abuja-central', 'retailer14', 'retailer-14', 'Wuse Central', 'ac.wh.wuse',  'ac.driver1', 9.0830, 7.4750, 2, 'retailer15', 'retailer-15')
+  ) as t(dist, shop_user, shop_slug, wh_name, staff, driver, lat, lng, refused, pending_user, pending_slug)
+  loop
+    -- Inbound receipt
+    perform pg_temp.act_as(r.staff);
+    perform app.record_receipt(pg_temp.wh(r.wh_name), 'GRN-SEED-' || r.dist,
+      jsonb_build_array(jsonb_build_object('sku_id', pg_temp.sku('DRY-PWD-400G'), 'uom_code', 'carton', 'uom_qty', 10)),
+      'seed:receipt:' || r.dist);
+    -- Pending adjustment (needs a branch manager's approval)
+    perform app.request_adjustment(pg_temp.wh(r.wh_name), pg_temp.sku('HOM-SOP-150G'), -2, 'cycle count: 2 bars crushed');
+
+    -- Retailer places an order: 2 cartons onion noodles + 6 cola
+    perform pg_temp.act_as(r.shop_user);
+    v_order := app.place_order(pg_temp.org(r.dist), pg_temp.org(r.shop_slug), jsonb_build_array(
+      jsonb_build_object('sku_id', pg_temp.sku('NDL-ONI-70G'), 'uom_code', 'carton', 'uom_qty', 2),
+      jsonb_build_object('sku_id', pg_temp.sku('BEV-COL-50CL'), 'uom_code', 'piece', 'uom_qty', 6)),
+      'seed:order:' || r.dist);
+    v_order_id := (v_order->>'order_id')::uuid;
+    if v_order->>'status' <> 'reserved' then
+      raise exception 'seed order for % not reserved: %', r.dist, v_order;
+    end if;
+
+    -- Warehouse batches, packs, dispatches; driver accepts in their own session
+    perform pg_temp.act_as(r.staff);
+    v_batch := app.create_batch(pg_temp.wh(r.wh_name), array[v_order_id]);
+    perform app.mark_batch_packed(v_batch);
+    v_shipment := app.dispatch_batch(v_batch, pg_temp.usr(r.driver));
+    perform pg_temp.act_as(r.driver);
+    perform app.accept_dispatch(v_shipment);
+
+    -- e-POD: photo object (stands in for the app upload), then the delivery with refused/damaged goods
+    v_photo := v_shipment || '/' || v_order_id || '/seed-epod.jpg';
+    insert into storage.objects (bucket_id, name, owner_id) values ('epod', v_photo, pg_temp.usr(r.driver)::text);
+    select jsonb_agg(jsonb_build_object(
+             'allocation_id', a.id,
+             'delivered', a.qty_pieces - case when a.sku_id = pg_temp.sku('NDL-ONI-70G') then r.refused
+                                             when a.sku_id = pg_temp.sku('BEV-COL-50CL') then 1 else 0 end,
+             'refused', case when a.sku_id = pg_temp.sku('NDL-ONI-70G') then r.refused else 0 end,
+             'damaged', case when a.sku_id = pg_temp.sku('BEV-COL-50CL') then 1 else 0 end,
+             'missing', 0))
+      into v_lines
+      from public.order_allocations a where a.order_id = v_order_id;
+    perform app.record_delivery(v_shipment, v_order_id, v_lines, r.lat, r.lng, 8, v_photo, 'Shop Owner', 'seed:delivery:' || r.dist);
+
+    -- Retailer disputes the refusal; warehouse counts the return; driver confirms -> shipment closes
+    perform pg_temp.act_as(r.shop_user);
+    perform app.dispute_delivery(v_order_id, format('%s noodle packs refused: dented carton', r.refused));
+    perform pg_temp.act_as(r.staff);
+    perform app.start_return(v_shipment, jsonb_build_array(
+      jsonb_build_object('sku_id', pg_temp.sku('NDL-ONI-70G'), 'qty_pieces', r.refused)));
+    perform pg_temp.act_as(r.driver);
+    if app.confirm_return(v_shipment) <> 'closed' then
+      raise exception 'seed shipment for % did not close', r.dist;
+    end if;
+
+    -- A second order left reserved, for the fulfilment screens
+    perform pg_temp.act_as(r.pending_user);
+    perform app.place_order(pg_temp.org(r.dist), pg_temp.org(r.pending_slug), jsonb_build_array(
+      jsonb_build_object('sku_id', pg_temp.sku('DRY-EVP-160G'), 'uom_code', 'carton', 'uom_qty', 1)),
+      'seed:order2:' || r.dist);
+  end loop;
+
+  -- Lagos Prime transfer Ikeja -> Lekki (received in full)
+  perform pg_temp.act_as('lp.bm.ikeja');
+  v_order_id := app.create_transfer(pg_temp.wh('Ikeja Main'), pg_temp.wh('Lekki Depot'),
+    jsonb_build_array(jsonb_build_object('sku_id', pg_temp.sku('BEV-WTR-75CL'), 'uom_code', 'carton', 'uom_qty', 5)));
+  perform pg_temp.act_as('lp.wh.ikeja');
+  perform app.dispatch_transfer(v_order_id);
+  perform pg_temp.act_as('lp.wh.lekki');
+  perform app.receive_transfer(v_order_id, jsonb_build_array(
+    jsonb_build_object('sku_id', pg_temp.sku('BEV-WTR-75CL'), 'received', 60, 'damaged', 0)));
+
+  perform set_config('request.jwt.claims', '', false);
+end;
+$$;

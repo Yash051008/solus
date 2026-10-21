@@ -3,7 +3,7 @@
 -- distributor B (abuja-central), in EVERY table. Plus positive scoping checks per role.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(175);
+select plan(241);
 
 create function pg_temp.login(p_handle text) returns void language plpgsql as $$
 begin
@@ -35,6 +35,17 @@ insert into public.kyc_checks (org_id, subject_user_id, id_type, outcome, provid
 select m.org_id, m.user_id, 'BVN', 'exact_match', 'mock', 'fixture-ref-13', repeat('a', 64)
 from public.memberships m join public.organisations o on o.id = m.org_id where o.slug = 'retailer-13';
 
+-- Fixture: distributor B has one warehouse, so give it a second one plus a transfer (raw rows, as owner).
+insert into public.warehouses (org_id, branch_id, name, location)
+select b.org_id, b.id, 'Garki Overflow', extensions.st_setsrid(extensions.st_makepoint(7.49, 9.03), 4326)::extensions.geography
+from public.branches b where b.name = 'Wuse';
+insert into public.transfers (org_id, from_warehouse_id, to_warehouse_id, created_by)
+select w1.org_id, w1.id, w2.id, (select id from auth.users where email = 'ac.bm.wuse@solus.test')
+from public.warehouses w1, public.warehouses w2 where w1.name = 'Wuse Central' and w2.name = 'Garki Overflow';
+insert into public.transfer_lines (transfer_id, sku_id, qty_pieces)
+select t.id, (select id from public.skus where code = 'BEV-WTR-75CL'), 12
+from public.transfers t join public.warehouses w on w.id = t.to_warehouse_id where w.name = 'Garki Overflow';
+
 -- How to key a row of each table, and which rows belong to distributor B (computed as owner).
 create temp table table_keys (tbl text primary key, key_expr text not null);
 insert into table_keys values
@@ -50,7 +61,11 @@ insert into table_keys values
   ('orders', 'x.id::text'), ('order_lines', 'x.id::text'),
   ('accounts', 'x.id::text'), ('journals', 'x.id::text'), ('ledger_entries', 'x.id::text'),
   ('account_balances', 'x.account_id::text'),
-  ('join_requests', 'x.id::text'), ('kyc_checks', 'x.id::text');
+  ('join_requests', 'x.id::text'), ('kyc_checks', 'x.id::text'),
+  ('receipts', 'x.id::text'), ('adjustment_requests', 'x.id::text'), ('transfers', 'x.id::text'),
+  ('transfer_lines', 'x.id::text'), ('order_allocations', 'x.id::text'), ('batches', 'x.id::text'),
+  ('shipments', 'x.id::text'), ('deliveries', 'x.id::text'), ('delivery_lines', 'x.id::text'),
+  ('order_disputes', 'x.id::text'), ('shipment_returns', 'x.id::text');
 
 select is(
   (select array_agg(tablename::text order by 1) from pg_tables
@@ -90,7 +105,24 @@ union all select 'journals', distinct_j.journal_id::text
 union all select 'ledger_entries', id::text from public.ledger_entries where account_id in (select id from b_accounts)
 union all select 'account_balances', account_id::text from public.account_balances where account_id in (select id from b_accounts)
 union all select 'join_requests', id::text from public.join_requests where org_id = (select id from b)
-union all select 'kyc_checks', id::text from public.kyc_checks where org_id in (select id from b_orgs);
+union all select 'kyc_checks', id::text from public.kyc_checks where org_id in (select id from b_orgs)
+union all select 'receipts', id::text from public.receipts where org_id = (select id from b)
+union all select 'adjustment_requests', id::text from public.adjustment_requests where org_id = (select id from b)
+union all select 'transfers', id::text from public.transfers where org_id = (select id from b)
+union all select 'transfer_lines', tl.id::text from public.transfer_lines tl join public.transfers t on t.id = tl.transfer_id
+          where t.org_id = (select id from b)
+union all select 'order_allocations', a.id::text from public.order_allocations a join public.orders o on o.id = a.order_id
+          where o.distributor_org_id = (select id from b)
+union all select 'batches', id::text from public.batches where org_id = (select id from b)
+union all select 'shipments', id::text from public.shipments where org_id = (select id from b)
+union all select 'deliveries', d.id::text from public.deliveries d join public.shipments s on s.id = d.shipment_id
+          where s.org_id = (select id from b)
+union all select 'delivery_lines', dl.id::text from public.delivery_lines dl join public.deliveries d on d.id = dl.delivery_id
+          join public.shipments s on s.id = d.shipment_id where s.org_id = (select id from b)
+union all select 'order_disputes', od.id::text from public.order_disputes od join public.orders o on o.id = od.order_id
+          where o.distributor_org_id = (select id from b)
+union all select 'shipment_returns', sr.id::text from public.shipment_returns sr join public.shipments s on s.id = sr.shipment_id
+          where s.org_id = (select id from b);
 
 select is(
   (select array_agg(k.tbl order by 1) from table_keys k

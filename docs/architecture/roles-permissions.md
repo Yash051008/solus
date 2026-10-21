@@ -74,7 +74,7 @@ Policies use the form `org_id = any((select app.current_org_ids()))`, with an in
 | Sync review queue: accept / accept-into-variance / reject | – | – | D | B | – | – | O (read own) | – |
 | Set retailer credit limit | – | – | D | B (propose) | – | – | – | – |
 | Credit purchase (confirm with credit OTP) | – | – | – | – | – | – | initiate T | O (OTP) |
-| View wallet / credit / statement | P | – | D (own customers) | B (own customers) | – | – | T (balance due only) | O |
+| View wallet / credit / statement | P | – | D (own book: customers' receivables + credit; **not** customers' wallets) | B (same, own branch customers) | – | – | T (balance due only, Phase 5b view) | O |
 | Record cash collected | – | – | – | – | – | O | O | – |
 | Provider webhooks, settlement import | system only | – | – | – | – | – | – | – |
 | Audit log | P | – | D (own org) | – | – | – | – | – |
@@ -90,7 +90,17 @@ Policies use the form `org_id = any((select app.current_org_ids()))`, with an in
 5. Platform admins can read across tenants for support, but **cannot** post stock movements or journals.
    Corrections are reversal entries posted by the owning distributor and approved under rule 1.
 
-### Required RLS tests (Phase 2)
+**Wallet privacy:** a retailer's wallet is visible only to the retailer (and platform admin). A retailer
+may buy from several distributors, so one distributor must not see funds the retailer may spend with
+another. Distributors see what is owed to them in their own book.
+
+### Phase 2 simplifications (tightened in the phase noted)
+- Branch managers and warehouse staff see **all** orders of their distributor, not just their branch's (Phase 4).
+- Drivers see no orders or retailers until delivery assignment exists (Phase 4).
+- Agents can't yet see territory retailers' balance due (Phase 5b view).
+- Manufacturer aggregate views don't exist yet. Manufacturers currently see distributor org rows and the catalogue only (Phase 6).
+
+### Required RLS tests (Phase 2: implemented in `supabase/tests/005_rls_isolation.test.sql`)
 - Distributor A's agent selects from every business table → 0 rows belonging to distributor B.
 - A retailer sees only their own orders, wallet and statements, and nothing of other retailers of the same
   distributor.

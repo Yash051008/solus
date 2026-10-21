@@ -101,15 +101,34 @@ docs/               spec, architecture, ADRs, progress
 ```
 
 ## Commands
-| Purpose | Command | Status |
-|---|---|---|
-| Full suite from clean DB | `npm run test:all` | **TBD in Phase 2. Does not exist yet.** |
-| Start local stack | `supabase start` | Requires Supabase CLI + Docker (see below) |
-| Reset DB + seed | `supabase db reset` | Phase 2 |
-| pgTAP tests | `supabase test db` | Phase 2 |
+| Purpose | Command |
+|---|---|
+| **Full suite from a clean DB** (reset + migrations + seed, pgTAP, typecheck, Node concurrency/invariant tests) | `npm run test:all` |
+| Start local stack (db, auth, rest only) | `npm run db:start` |
+| Reset DB (migrations + seed) | `npm run db:reset` |
+| pgTAP only | `npm run test:db` |
+| Node DB tests only (needs a reset DB) | `npm run test:node` |
+| Typecheck | `npm run typecheck` |
 
-Environment as of 2026-10-21: Node v26.4.0 ✅, npm 11.17.0 ✅, Docker installed but **daemon not running** ❌,
-Supabase CLI **not installed** ❌ (`brew install supabase/tap/supabase`), pnpm absent (we use npm workspaces).
+`scripts/test-all.sh` exits with code 2 and does not run if Docker or the Supabase CLI is missing.
+Local DB: `postgresql://postgres:postgres@127.0.0.1:54322/postgres` (override with `DATABASE_URL`).
+Seeded users: `<handle>@solus.test`, password `SolusDev-2026!` (local only, handles listed in `supabase/seed.sql`).
+
+## SQL conventions learned the hard way
+- **Projection triggers: UPDATE first, INSERT if missing, retry on `unique_violation`.** Never use
+  `INSERT … ON CONFLICT DO UPDATE` for delta upserts. Postgres evaluates CHECK constraints against the
+  *proposed insert row* (the bare delta) before resolving the conflict, which rejects valid decrements.
+- RLS array helpers: write `col = any((select app.fn())::uuid[])`. Without the cast, `any((select …))` is
+  parsed as a subquery yielding `uuid[]` rows and fails.
+- plpgsql compiles both branches of a `CASE`, so `case when tg_table_name = … then new.x else new.y end`
+  fails on tables without `y`. Use `IF`.
+- Postgres has no autonomous transactions: anything that must persist on a "failure" (OTP attempt counters)
+  must return a failure result, not raise.
+- Tests that need deferred constraint triggers to fire inside a rolled-back pgTAP transaction use
+  `set constraints all immediate`.
+
+Environment as of 2026-10-21: Node v26.4.0, npm 11.17.0, Docker 29.5.2 (running), Supabase CLI 2.121.0,
+Postgres 17 (local image). No psql on the host: use `docker exec supabase_db_solus psql -U postgres`.
 
 ## Working method
 Seven gated phases (see [PROGRESS.md](docs/PROGRESS.md)). At the end of each phase: run the full suite, show

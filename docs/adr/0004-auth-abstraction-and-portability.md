@@ -24,9 +24,12 @@ policy and function.
    which also says to index every policy column and to use `security definer` helpers with an empty
    `search_path` for cross-table checks
    ([RLS docs](https://supabase.com/docs/guides/database/postgres/row-level-security), read 2026-10-21).
-3. **Role/org helpers** (`app.current_org_ids()`, `app.has_role()`, `app.current_branch_ids()`,
-   `app.is_platform_admin()`) are `security definer`, `stable`, `search_path = ''`, fully schema-qualified,
-   and built only on `app.current_user_id()`.
+3. **Role/org helpers** (as built in Phase 2: `app.is_platform_admin()`, `app.my_org_ids()`,
+   `app.my_org_ids_with_role(roles)`, `app.my_branch_ids(roles)`, `app.visible_*_ids()`) are
+   `security definer`, `stable`, `search_path = ''`, fully schema-qualified, and built only on
+   `app.current_user_id()`. They return `uuid[]`, and policies use
+   `col = any((select app.fn())::uuid[])`. The cast is required: without it Postgres parses
+   `any((select …))` as a row subquery.
 4. **Repository layer** (`packages/db`): the only TypeScript that touches the database. It exposes typed
    functions (`orders.place(...)`, `stock.balances(...)`) backed by supabase-js today. The interface hides
    the client so it can switch to a plain HTTP/PostgREST or `pg` implementation. UI code never imports

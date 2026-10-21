@@ -1,0 +1,22 @@
+{
+  "name": "solus",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "db:start": "supabase start -x studio,imgproxy,logflare,vector,edge-runtime,storage-api,supavisor,mailpit,postgres-meta,realtime",
+    "db:reset": "supabase db reset",
+    "test:db": "supabase test db",
+    "test:node": "node --test \"tests/**/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:all": "bash scripts/test-all.sh"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.3",
+    "@types/pg": "8.11.14",
+    "pg": "8.15.6",
+    "typescript": "5.8.3"
+  }
+}

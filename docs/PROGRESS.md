@@ -2,13 +2,54 @@
 
 | Phase | Scope | Status | Date |
 |---|---|---|---|
-| 1 | CLAUDE.md, architecture, flows, events, risks, hosting + regulatory ADRs | **Done, awaiting "next"** | 2026-10-21 |
-| 2 | Schema, migrations, ledgers + projections, RLS, seed, invariant/RLS/concurrency tests | Not started (blocked on Docker + Supabase CLI) | |
+| 1 | CLAUDE.md, architecture, flows, events, risks, hosting + regulatory ADRs | Done | 2026-10-21 |
+| 2 | Schema, migrations, ledgers + projections, RLS, seed, invariant/RLS/concurrency tests | **Done, awaiting "next"** | 2026-10-21 |
 | 3 | Auth, per-role routing, registration + approval, KYC interface + mock, geofence, branch/territory/warehouse mgmt | Not started | |
 | 4 | Catalogue, inventory, transfers, pull flow + routing, batching/packing UI, delivery + e-POD + partial/missing | Not started | |
 | 5a | Push: request → approve → OTP handover → return → reconciliation (variance approval, close blocking) | Not started | |
 | 5b | Wallet ledger, trade credit + credit OTP, payment webhooks + reconciliation, offline agent app + sync | Not started | |
 | 6 | Dashboards, notifications, support tickets, hardening, E2E of both flows on the same stock | Not started | |
+
+## Phase 2: what exists
+Run everything with `npm run test:all` (clean DB → 269 pgTAP assertions → typecheck → 5 Node tests).
+
+| Area | Files | Proven by |
+|---|---|---|
+| Schemas, default privileges | `supabase/migrations/…0100_extensions_schemas.sql` | 001 (no client write grants, anon nothing) |
+| Enums, auth seam `app.current_user_id()`, `app.round_div`, shared guards | `…0200_types_and_core_helpers.sql` | 001 (auth.uid only in the seam), 002 (34 rounding cases) |
+| Tenancy: orgs, branches, territories, warehouses, profiles, memberships, customer/supply relationships | `…0300_tenancy.sql` | composite FKs make cross-tenant references impossible; 005 |
+| Catalogue, immutable `sku_uom`, effective-dated price lists | `…0400_catalogue.sql` | 003 (factor immutability) |
+| Inventory ledger + `stock_balances` projection (CHECKs, trigger-only, group balance for handover/return) | `…0500_inventory_ledger.sql` | 003, Node commit-time test |
+| Orders + DB-side carton→piece conversion, immutable lines | `…0600_orders.sql` | 003 |
+| Money ledger: accounts per book, journals, entries, zero-sum per book (deferred), sign-rule CHECKs | `…0700_money_ledger.sql` | 004, Node commit-time test |
+| `app.ensure_account`, `app.post_journal` (idempotent), `app.post_stock_movement`, `app.reserve_order` (atomic, row-locked), rebuild checks | `…0800_ledger_functions.sql` | 003, 004, Node 50-vs-10 + duplicate-posting tests |
+| RLS helpers + SELECT-only policies on every table | `…0900_rls_helpers.sql`, `…1000_rls_policies.sql` | 005 (163 assertions) |
+| Append-only audit log on every business table | `…1100_audit.sql` | 006 |
+| Explicit grants | `…1200_grants.sql` | 001 |
+| Seed: 1 manufacturer, 2 distributors, 3 branches, 5 territories, 3 warehouses, 5 agents, 2 drivers, 20 retailers, 15 SKUs, opening stock + wallet top-ups through the ledgers | `supabase/seed.sql` | 003/004 assume it; rebuild checks pass after seeding |
+| Node harness | `package.json`, `tsconfig.json`, `tests/support/db.ts`, `tests/concurrency/`, `tests/invariants/`, `scripts/test-all.sh` | |
+
+**Mutation check (done once by hand, not automated):** with `FOR UPDATE` removed from `app.reserve_order`,
+the 50-vs-10 test **failed**. Oversell still didn't happen, because the `reserved <= on_hand` CHECK held,
+but the failures surfaced as raw `23514` instead of a clean `SOL01`. That shows both layers work and the
+test is not vacuous.
+
+**Bug found by the tests and fixed:** projection triggers originally used `INSERT … ON CONFLICT DO UPDATE`.
+Postgres evaluates CHECKs on the proposed insert row first, so every decrement of an existing balance was
+rejected. They now update first and insert only if the row is missing (see CLAUDE.md "SQL conventions").
+
+## Phase 2: known gaps
+- **No client-callable commands yet.** `reserve_order` and the ledger primitives are internal. So the
+  concurrency test calls `reserve_order` as the owner role. Phase 4 adds `app.place_order` (routing +
+  reservation) with an `EXECUTE` grant, and the concurrency test then also runs as authenticated retailers.
+- Tables that arrive with their flows: `shipments`, `transfers`, `variance_cases` (4/5a), `otp_challenges`
+  (5a), `sync_events`/`review_items`/`provider_events` (5b), `domain_events` (4). Each lands with RLS,
+  audit trigger and isolation-test coverage. The isolation test fails if any public table is missing from it.
+- RLS simplifications listed in [roles-permissions.md](architecture/roles-permissions.md#phase-2-simplifications-tightened-in-the-phase-noted).
+- RLS performance (initPlan behaviour, index usage) not measured yet (Phase 6 hardening).
+- Duplicate *webhook* test proper (signature + HTTP 200 on replay) is Phase 5b. Phase 2 proves the DB half:
+  20 concurrent duplicate postings → exactly one journal.
+- CBN circular primary text still unread (see Phase 1 gaps).
 
 ## Phase 1: what exists
 - [CLAUDE.md](../CLAUDE.md): hard rules with reasons, numeric/portability/testing rules, commands, layout.
@@ -31,11 +72,11 @@
 - GAID retention specifics not confirmed. The retention schedule is still TBD (ADR-0002).
 - Provider choices (payments/virtual accounts, KYC, SMS) not made yet. Each is researched in the phase that
   writes its interface.
-- No runnable test suite yet. Phase 1 is docs only. Validation was Mermaid rendering + link checks.
+- No runnable test suite in Phase 1 (docs only). Validation was Mermaid rendering + link checks.
 
-## Phase 2 prerequisites (environment)
-- Start Docker Desktop (installed, daemon not running on 2026-10-21).
-- Install the Supabase CLI: `brew install supabase/tap/supabase`.
+## Environment prerequisites
+- Docker Desktop running.
+- Supabase CLI installed (`brew install supabase/tap/supabase`). Both confirmed working on 2026-10-21.
 
 ## Scope map (every SPEC.md bullet appears exactly once)
 **B** = build in MVP · **S** = stub behind an interface · **D** = deferred (extension point kept)

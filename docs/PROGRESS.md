@@ -11,17 +11,43 @@
 | 6 | Dashboards, notifications, support tickets, hardening, E2E of both flows on the same stock | Not started | |
 
 ## ▶ Resume here
-- **Next up: Phase 5b.** Wallet ledger + payment provider research (ADR-0008: Paystack DVA / Monnify /
-  Flutterwave), signed idempotent webhooks (duplicate test), wallet/credit settlement with credit OTP
-  (`otp_challenges` purpose `credit` is already reserved), cash remittance, and the Expo offline agent app
-  with event sync and accept-into-variance (`app.apply_push_sale` is the core the sync path will call).
-- Last verified: `npm run test:all` passes from clean at `b9911bc` (530 pgTAP, 30 Node tests,
-  typecheck, web build).
-- Run locally: `npm run db:start` → `npm run db:reset` → `npm run web:env` →
-  `npm run dev --workspace @solus/web` → http://localhost:3100. Password `SolusDev-2026!` for
-  `retailer01@`, `lp.wh.ikeja@`, `lp.driver1@`, `lp.agent2@`, `lp.bm.ikeja@`, `lp.admin@` (`@solus.test`).
-  With the mock SMS provider, the agent's /field page shows the code "received by SMS".
-- Working style: gated steps, short replies, typecheck + browser check + commit per step, stop for "next".
+Autonomous run (user instruction, 2026-10-22): build 5b-2 → 5b-1 → Phase 6 without waiting for "next";
+after each step typecheck + `npm run test:all` + commit + update this section. Final report at the end.
+- **Done:** 5b-2 offline agent app (this commit).
+- **Next:** 5b-1. Wallet + virtual accounts (ADR-0008 research first: Paystack DVA / Monnify /
+  Flutterwave), signed idempotent payment webhooks (duplicate test), order settlement from wallet and/or
+  trade credit with credit OTP (`otp_challenges` purpose `credit`), credit limits, cash remittance via
+  unallocated receipts, provider statement reconciliation. Then Phase 6.
+- Last verified: `npm run test:all` passes (582 pgTAP, 36 Node tests, typecheck, web build, Expo Android bundle).
+- Run locally: `npm run db:start` → `npm run db:reset` → `npm run web:env` → `npm run dev --workspace @solus/web`
+  (http://localhost:3100). Phone: `npm run agent:env` → `npm run agent:start`, then scan the QR with Expo Go
+  (same Wi-Fi). Password `SolusDev-2026!` for every seeded user (`@solus.test`).
+
+## Assumptions made without asking (autonomous run)
+- Expo SDK 58 (what Expo Go on phones runs today). No Xcode on this Mac, so no iOS simulator run. The app is
+  verified by typecheck, a Metro Android bundle in `test:all`, and the engine's Node/integration tests.
+- Offline credit sales stay disallowed (ADR-0003 D8). Offline events are sales and visit check-ins only.
+- Accept-into-variance also covers sales rejected for being outside the geofence (manager override).
+  Excess units become an `unrecorded_stock` variance case, resolved by "link to missed handover" or
+  "accept as is". There's no money journal for it, because no money is missing.
+- A rejected event is never resent by the device. It stays visible as "in review" until a manager acts.
+- `next build` in `test:all` writes to `.next-build`, so it never breaks a running `next dev`.
+
+## Phase 5b-2: what exists
+- DB (`20261026000100_offline_sync.sql`): `agent_devices` (seq high-water), `sync_events` (event_id PK,
+  stored result), `agent_visits`, `review_items`; `app.sync_agent_events` (per-event subtransaction,
+  idempotent replay, strict seq with `deferred`/`seq_gap`, reason codes); `review_accept_into_variance`,
+  `review_dismiss`; variance `kind` (`shortfall`/`unrecorded_stock`) with `link_handover`; shipments never
+  close while any case is pending. Seed: an offline batch per distributor with one rejection in review.
+- `@solus/agent-core`: platform-neutral outbox engine (seq, advisory geofence, estimated carried stock,
+  idempotent sync, offline detection), memory store, Supabase transport. Tests: 5 engine unit tests;
+  integration `tests/integration/offline-agent.test.ts` runs the spec scenario on the real stack
+  (carries 50, sells 60 offline → rejected → accept into variance → close blocked → resolved).
+- `apps/agent` (Expo SDK 58): SQLite outbox store, persisted session, screens for stock run, cash sale
+  (GPS + geofence hint), check-in, activity (with rejection reasons), request stock. `npm run agent:env`
+  writes the LAN URL for a phone.
+- Web: review queue + kind-specific variance actions on **Agent stock**. Browser-checked: accepted the
+  seeded rejected sale (15 sold vs 10 carried → 5-piece pending case).
 
 ## Phase 5a: what exists
 - ADR-0006: our own OTPs. bcrypt-hashed, 5-minute expiry, 5 attempts, max 3 issues, initiator-only,

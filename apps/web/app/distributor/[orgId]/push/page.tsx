@@ -3,7 +3,7 @@ import { formatNaira, kobo } from '@solus/core';
 import { Flash, Status } from '@/components/shell';
 import { requireOrgRole } from '@/lib/session';
 import { showQty, skuMap } from '@/lib/catalogue';
-import { decideRequest, resolveVariance, startHandover, startReturn, verifyOtp } from './actions';
+import { decideRequest, dismissReview, acceptIntoVariance, resolveVariance, startHandover, startReturn, verifyOtp } from './actions';
 
 export default async function PushPage({ params, searchParams }: {
   params: Promise<{ orgId: string }>;
@@ -25,9 +25,10 @@ export default async function PushPage({ params, searchParams }: {
     repo.fulfilment.shipments({ warehouseIds: [whId] }), repo.fulfilment.carriers(orgId), repo.stock.balances(orgId),
   ]);
   const push = shipments.filter((s) => s.kind === 'push' && s.status !== 'closed' && s.status !== 'cancelled');
-  const [lines, cases] = await Promise.all([
+  const [lines, cases, reviews] = await Promise.all([
     repo.push.shipmentLines(push.map((s) => s.id)),
     repo.push.varianceCases({ shipmentIds: shipments.map((s) => s.id), status: 'pending' }),
+    isManager ? repo.push.reviewItems(orgId) : Promise.resolve([]),
   ]);
   const who = new Map(carriers.map((c) => [c.id, c.profiles?.full_name ?? 'agent']));
   const whoByUser = new Map(carriers.map((c) => [c.user_id, c.profiles?.full_name ?? 'agent']));
@@ -101,14 +102,42 @@ export default async function PushPage({ params, searchParams }: {
 
       {isManager ? (
         <>
+          <h2>Offline events needing review ({reviews.length})</h2>
+          <p className="muted">Rejected by the server when the agent synced. A sale that really happened can be accepted into variance:
+            it is recorded, and the stock it exceeded becomes a pending case against the agent.</p>
+          {reviews.map((r) => {
+            const lines2 = (r.sync_events?.payload as { lines?: { sku_id: string; qty_pieces: number }[] } | undefined)?.lines ?? [];
+            return (
+              <div key={r.id} className="panel">
+                <strong>{r.profiles?.full_name}</strong> · {r.sync_events?.type} · <span className="badge rejected">{r.reason.replaceAll('_', ' ')}</span>
+                <div className="muted">{lines2.map((l) => `${skus.get(l.sku_id)?.code} × ${l.qty_pieces}`).join(', ')} · recorded on the phone {r.sync_events?.client_ts ? new Date(r.sync_events.client_ts).toLocaleString('en-NG') : ''}</div>
+                <form action={acceptIntoVariance} className="inline" style={{ marginTop: 8 }}>{hidden({ itemId: r.id })}
+                  <label>Note<input name="note" required /></label>
+                  {r.sync_events?.type === 'sale.recorded' ? <button type="submit">Accept into variance</button> : null}
+                  <button formAction={dismissReview} className="secondary" type="submit">Dismiss</button>
+                </form>
+              </div>
+            );
+          })}
+
           <h2>Variance awaiting approval</h2>
           {cases.length === 0 ? <p className="muted">None.</p> : cases.map((c) => (
             <div key={c.id} className="panel">
-              <strong>{whoByUser.get(c.carrier_user_id)}</strong>: {c.qty_pieces} × {skus.get(c.sku_id)?.name} unaccounted for ({formatNaira(kobo(c.value_kobo ?? '0'))})
+              <strong>{whoByUser.get(c.carrier_user_id)}</strong>: {c.qty_pieces} × {skus.get(c.sku_id)?.name}{' '}
+              {c.kind === 'unrecorded_stock' ? 'sold beyond recorded stock' : `unaccounted for (${formatNaira(kobo(c.value_kobo ?? '0'))})`}
               <form action={resolveVariance} className="inline" style={{ marginTop: 8 }}>{hidden({ caseId: c.id })}
                 <label>Note<input name="note" required /></label>
-                <button name="decision" value="write_off" className="secondary" type="submit">Write off</button>
-                <button name="decision" value="charge_agent" type="submit">Charge agent</button>
+                {c.kind === 'unrecorded_stock' ? (
+                  <>
+                    <button name="decision" value="link_handover" type="submit">Link to a missed handover</button>
+                    <button name="decision" value="write_off" className="secondary" type="submit">Accept as is</button>
+                  </>
+                ) : (
+                  <>
+                    <button name="decision" value="write_off" className="secondary" type="submit">Write off</button>
+                    <button name="decision" value="charge_agent" type="submit">Charge agent</button>
+                  </>
+                )}
               </form>
             </div>
           ))}

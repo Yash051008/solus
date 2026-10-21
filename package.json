@@ -14,7 +14,9 @@
     "test:all": "bash scripts/test-all.sh",
     "db:types": "supabase gen types typescript --local --schema public --schema app > packages/db/src/database.types.ts",
     "web:env": "bash scripts/web-env.sh",
-    "web:build": "npm run --workspace @solus/web build"
+    "web:build": "npm run --workspace @solus/web build",
+    "agent:env": "bash scripts/agent-env.sh",
+    "agent:start": "npm run start --workspace @solus/agent"
   },
   "devDependencies": {
     "@types/node": "22.15.3",
@@ -24,7 +26,8 @@
     "@supabase/supabase-js": "2.117.2",
     "@solus/core": "*",
     "@solus/db": "*",
-    "@solus/integrations": "*"
+    "@solus/integrations": "*",
+    "@solus/agent-core": "*"
   },
   "workspaces": [
     "packages/*",

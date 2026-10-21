@@ -455,3 +455,42 @@ begin
   perform set_config('request.jwt.claims', '', false);
 end;
 $$;
+
+-- Phase 5b-2 demo: an agent syncs an offline batch per distributor (visit, sale, and a sale beyond carried
+-- stock that lands in the review queue for a branch manager).
+do $$
+declare
+  r record;
+  v_req uuid; v_ship uuid; v_chal uuid; v_code text; v_res jsonb;
+  v_sku uuid := pg_temp.sku('HOM-SOP-150G');
+begin
+  for r in select * from (values
+    ('lp.agent3', 'lp.bm.lekki', 'lp.wh.lekki', 'Lekki Depot',  'retailer-10', 6.4520, 3.4800, 'cccccccc-0000-4000-8000-00000000000a'),
+    ('ac.agent2', 'ac.bm.wuse',  'ac.wh.wuse',  'Wuse Central', 'retailer-18', 9.0350, 7.4950, 'cccccccc-0000-4000-8000-00000000000b')
+  ) as t(agent, bm, staff, wh_name, shop_slug, lat, lng, device)
+  loop
+    perform pg_temp.act_as(r.agent);
+    v_req := app.request_stock(pg_temp.wh(r.wh_name), jsonb_build_array(jsonb_build_object('sku_id', v_sku, 'uom_code', 'piece', 'uom_qty', 40)));
+    perform pg_temp.act_as(r.bm);
+    v_ship := app.decide_stock_request(v_req, true);
+    perform pg_temp.act_as(r.staff);
+    v_chal := app.start_handover(v_ship);
+    select code into v_code from app.issue_otp_code(v_chal);
+    perform app.verify_otp(v_chal, v_code);
+
+    perform pg_temp.act_as(r.agent);
+    perform app.register_device(r.device::uuid, (select org_id from public.shipments where id = v_ship));
+    v_res := app.sync_agent_events(r.device::uuid, jsonb_build_array(
+      jsonb_build_object('event_id', gen_random_uuid(), 'seq', 1, 'type', 'visit.checked_in', 'lat', r.lat, 'lng', r.lng, 'accuracy_m', 6,
+                         'client_ts', now() - interval '2 hours', 'payload', jsonb_build_object('retailer_id', pg_temp.org(r.shop_slug))),
+      jsonb_build_object('event_id', gen_random_uuid(), 'seq', 2, 'type', 'sale.recorded', 'lat', r.lat, 'lng', r.lng, 'accuracy_m', 6,
+                         'client_ts', now() - interval '2 hours', 'payload', jsonb_build_object('shipment_id', v_ship, 'retailer_id', pg_temp.org(r.shop_slug),
+                         'lines', jsonb_build_array(jsonb_build_object('sku_id', v_sku, 'qty_pieces', 30)))),
+      jsonb_build_object('event_id', gen_random_uuid(), 'seq', 3, 'type', 'sale.recorded', 'lat', r.lat, 'lng', r.lng, 'accuracy_m', 6,
+                         'client_ts', now() - interval '1 hour', 'payload', jsonb_build_object('shipment_id', v_ship, 'retailer_id', pg_temp.org(r.shop_slug),
+                         'lines', jsonb_build_array(jsonb_build_object('sku_id', v_sku, 'qty_pieces', 15))))));
+    if v_res->2->>'status' <> 'rejected' then raise exception 'seed sync expected a rejection: %', v_res; end if;
+  end loop;
+  perform set_config('request.jwt.claims', '', false);
+end;
+$$;

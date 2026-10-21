@@ -72,7 +72,9 @@ select is(
        'start_return', 'confirm_return', 'close_shipment',
        -- Phase 5a commands
        'verify_otp', 'request_stock', 'decide_stock_request', 'start_handover', 'record_push_sale',
-       'start_push_return', 'resolve_variance')),
+       'start_push_return', 'resolve_variance',
+       -- Phase 5b-2 commands
+       'register_device', 'sync_agent_events', 'review_accept_into_variance', 'review_dismiss')),
   null,
   'authenticated can execute only allow-listed functions (no ledger primitives, no adapter-only functions)'
 );

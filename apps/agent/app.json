@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Solus Field",
+    "slug": "solus-field",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      "expo-sqlite",
+      "expo-status-bar",
+      ["expo-location", { "locationWhenInUsePermission": "Solus checks you are at the shop when you record a visit or sale." }]
+    ],
+    "ios": { "bundleIdentifier": "ng.solus.field" },
+    "android": { "package": "ng.solus.field", "permissions": ["ACCESS_FINE_LOCATION"] }
+  }
+}

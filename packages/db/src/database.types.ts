@@ -24,7 +24,10 @@ export type Database = {
 { Args: { "p_amount_kobo": number,"p_bps": number,"p_mode"?: string }; Returns: number
                            },
 "apply_push_sale":
-{ Args: { "p_accuracy_m": number,"p_agent_user_id": string,"p_idempotency_key": string,"p_lat": number,"p_lines": Json,"p_lng": number,"p_retailer_org_id": string,"p_shipment_id": string }; Returns: Json
+{ Args: { "p_accuracy_m": number,"p_agent_user_id": string,"p_idempotency_key": string,"p_lat": number,"p_lines": Json,"p_lng": number,"p_retailer_org_id": string,"p_shipment_id": string,"p_skip_geofence"?: boolean }; Returns: Json
+                           },
+"apply_sync_event":
+{ Args: { "p_dev": Omit<Database["public"]['Tables']["agent_devices"]['Row'], Database["public"]['Tables']["agent_devices"]['ComputedFields']>,"p_event": Json }; Returns: Json
                            },
 "can_manage_branch":
 { Args: { "p_branch_id": string }; Returns: boolean
@@ -213,6 +216,9 @@ export type Database = {
 "refresh_order_status":
 { Args: { "p_order_id": string }; Returns: undefined
                            },
+"register_device":
+{ Args: { "p_device_id": string,"p_org_id": string }; Returns: number
+                           },
 "register_retailer":
 { Args: { "p_accuracy_m": number,"p_business_name": string,"p_distributor_id": string,"p_full_name": string,"p_lat": number,"p_lng": number,"p_phone_e164": string }; Returns: string
                            },
@@ -257,6 +263,12 @@ export type Database = {
 "resolve_variance":
 { Args: { "p_case_id": string,"p_decision": string,"p_note": string }; Returns: string
                            },
+"review_accept_into_variance":
+{ Args: { "p_item_id": string,"p_note": string }; Returns: Json
+                           },
+"review_dismiss":
+{ Args: { "p_item_id": string,"p_reason": string }; Returns: undefined
+                           },
 "round_div":
 { Args: { "p_den": number,"p_mode"?: string,"p_num": number }; Returns: number
                            },
@@ -283,6 +295,9 @@ export type Database = {
                            },
 "suggest_territory":
 { Args: { "p_distributor_id": string,"p_point": unknown }; Returns: string
+                           },
+"sync_agent_events":
+{ Args: { "p_device_id": string,"p_events": Json }; Returns: Json
                            },
 "update_distributor_settings":
 { Args: { "p_geofence_max_accuracy_m": number,"p_geofence_radius_m": number,"p_org_id": string,"p_split_threshold_m": number }; Returns: undefined
@@ -455,6 +470,88 @@ isOneToOne: false
       columns: ["sku_id"]
 isOneToOne: false
       referencedRelation: "skus"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"agent_devices": {
+                  Row: {
+                    "device_id": string,"last_seq": number,"last_sync_at": string | null,"org_id": string,"registered_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "device_id": string,"last_seq"?: number,"last_sync_at"?: string | null,"org_id": string,"registered_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "device_id"?: string,"last_seq"?: number,"last_sync_at"?: string | null,"org_id"?: string,"registered_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agent_devices_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agent_devices_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agent_devices_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"agent_visits": {
+                  Row: {
+                    "agent_user_id": string,"distance_m": number | null,"event_id": string,"geofence_ok": boolean,"geofence_reason": string,"id": string,"org_id": string,"recorded_at": string,"retailer_org_id": string,"visited_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "agent_user_id": string,"distance_m"?: number | null,"event_id": string,"geofence_ok": boolean,"geofence_reason": string,"id"?: string,"org_id": string,"recorded_at"?: string,"retailer_org_id": string,"visited_at": string
+                  }
+                  Update: {
+                    "agent_user_id"?: string,"distance_m"?: number | null,"event_id"?: string,"geofence_ok"?: boolean,"geofence_reason"?: string,"id"?: string,"org_id"?: string,"recorded_at"?: string,"retailer_org_id"?: string,"visited_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "agent_visits_agent_user_id_fkey"
+      columns: ["agent_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "agent_visits_event_id_fkey"
+      columns: ["event_id"]
+isOneToOne: true
+      referencedRelation: "sync_events"
+      referencedColumns: ["event_id"]
+    },{
+      foreignKeyName: "agent_visits_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agent_visits_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agent_visits_retailer_org_id_fkey"
+      columns: ["retailer_org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "agent_visits_retailer_org_id_fkey"
+      columns: ["retailer_org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
       referencedColumns: ["id"]
     }
                   ]
@@ -1222,6 +1319,50 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"review_items": {
+                  Row: {
+                    "agent_user_id": string,"created_at": string,"decided_at": string | null,"decided_by": string | null,"decision_note": string | null,"event_id": string,"id": string,"org_id": string,"reason": string,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "agent_user_id": string,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string | null,"event_id": string,"id"?: string,"org_id": string,"reason": string,"status"?: string
+                  }
+                  Update: {
+                    "agent_user_id"?: string,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string | null,"event_id"?: string,"id"?: string,"org_id"?: string,"reason"?: string,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "review_items_agent_user_id_fkey"
+      columns: ["agent_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "review_items_decided_by_fkey"
+      columns: ["decided_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "review_items_event_id_fkey"
+      columns: ["event_id"]
+isOneToOne: true
+      referencedRelation: "sync_events"
+      referencedColumns: ["event_id"]
+    },{
+      foreignKeyName: "review_items_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "review_items_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"shipment_lines": {
                   Row: {
                     "id": string,"qty_pieces": number,"shipment_id": string,"sku_id": string
@@ -1616,6 +1757,44 @@ isOneToOne: false
       referencedColumns: ["id","kind"]
     }
                   ]
+                },"sync_events": {
+                  Row: {
+                    "accuracy_m": number | null,"agent_user_id": string,"client_ts": string | null,"device_id": string,"event_id": string,"lat": number | null,"lng": number | null,"org_id": string,"payload": NonNullable<Json>,"reason": string | null,"recorded_at": string,"result": Json | null,"seq": number,"status": string,"type": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "accuracy_m"?: number | null,"agent_user_id": string,"client_ts"?: string | null,"device_id": string,"event_id": string,"lat"?: number | null,"lng"?: number | null,"org_id": string,"payload": NonNullable<Json>,"reason"?: string | null,"recorded_at"?: string,"result"?: Json | null,"seq": number,"status": string,"type": string
+                  }
+                  Update: {
+                    "accuracy_m"?: number | null,"agent_user_id"?: string,"client_ts"?: string | null,"device_id"?: string,"event_id"?: string,"lat"?: number | null,"lng"?: number | null,"org_id"?: string,"payload"?: NonNullable<Json>,"reason"?: string | null,"recorded_at"?: string,"result"?: Json | null,"seq"?: number,"status"?: string,"type"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "sync_events_agent_user_id_fkey"
+      columns: ["agent_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "sync_events_device_id_fkey"
+      columns: ["device_id"]
+isOneToOne: false
+      referencedRelation: "agent_devices"
+      referencedColumns: ["device_id"]
+    },{
+      foreignKeyName: "sync_events_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "sync_events_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"territories": {
                   Row: {
                     "boundary": unknown,"branch_id": string,"created_at": string,"id": string,"name": string,"org_id": string
@@ -1744,14 +1923,14 @@ isOneToOne: false
                   ]
                 },"variance_cases": {
                   Row: {
-                    "carrier_user_id": string,"created_at": string,"id": string,"org_id": string,"qty_pieces": number,"raised_journal_id": string | null,"resolution_note": string | null,"resolved_at": string | null,"resolved_by": string | null,"resolved_journal_id": string | null,"shipment_id": string,"sku_id": string,"status": string,"value_kobo": number
+                    "carrier_user_id": string,"created_at": string,"id": string,"kind": string,"org_id": string,"qty_pieces": number,"raised_journal_id": string | null,"resolution_note": string | null,"resolved_at": string | null,"resolved_by": string | null,"resolved_journal_id": string | null,"shipment_id": string,"sku_id": string,"status": string,"value_kobo": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "carrier_user_id": string,"created_at"?: string,"id"?: string,"org_id": string,"qty_pieces": number,"raised_journal_id"?: string | null,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"resolved_journal_id"?: string | null,"shipment_id": string,"sku_id": string,"status"?: string,"value_kobo": number
+                    "carrier_user_id": string,"created_at"?: string,"id"?: string,"kind"?: string,"org_id": string,"qty_pieces": number,"raised_journal_id"?: string | null,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"resolved_journal_id"?: string | null,"shipment_id": string,"sku_id": string,"status"?: string,"value_kobo": number
                   }
                   Update: {
-                    "carrier_user_id"?: string,"created_at"?: string,"id"?: string,"org_id"?: string,"qty_pieces"?: number,"raised_journal_id"?: string | null,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"resolved_journal_id"?: string | null,"shipment_id"?: string,"sku_id"?: string,"status"?: string,"value_kobo"?: number
+                    "carrier_user_id"?: string,"created_at"?: string,"id"?: string,"kind"?: string,"org_id"?: string,"qty_pieces"?: number,"raised_journal_id"?: string | null,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"resolved_journal_id"?: string | null,"shipment_id"?: string,"sku_id"?: string,"status"?: string,"value_kobo"?: number
                   }
                   Relationships: [
                     {

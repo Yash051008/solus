@@ -78,11 +78,28 @@ export async function verifyOtp(fd: FormData) {
   redirect(target);
 }
 
+export async function acceptIntoVariance(fd: FormData) {
+  let message = '';
+  await mutate(back(fd), async () => {
+    const r = await (await getRepo()).push.acceptIntoVariance(text(fd, 'itemId'), text(fd, 'note'));
+    message = r.unrecorded_pieces > 0
+      ? `Sale recorded. ${r.unrecorded_pieces} pieces beyond recorded stock are now a pending variance case.`
+      : 'Sale recorded.';
+  }, () => message);
+}
+
+export async function dismissReview(fd: FormData) {
+  await mutate(back(fd), async () => {
+    await (await getRepo()).push.dismissReview(text(fd, 'itemId'), text(fd, 'note'));
+  }, 'Dismissed.');
+}
+
 export async function resolveVariance(fd: FormData) {
-  const decision = text(fd, 'decision') === 'charge_agent' ? 'charge_agent' : 'write_off';
+  const raw = text(fd, 'decision');
+  const decision = raw === 'charge_agent' || raw === 'link_handover' ? raw : 'write_off';
   let message = '';
   await mutate(back(fd), async () => {
     const r = await (await getRepo()).push.resolveVariance(text(fd, 'caseId'), decision, text(fd, 'note'));
-    message = `${decision === 'write_off' ? 'Written off' : 'Charged to the agent'}.${r === 'closed' ? ' Shipment closed.' : ''}`;
+    message = `${decision === 'write_off' ? 'Resolved' : decision === 'charge_agent' ? 'Charged to the agent' : 'Linked to the missed handover'}.${r === 'closed' ? ' Shipment closed.' : ''}`;
   }, () => message);
 }

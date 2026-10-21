@@ -141,7 +141,7 @@ export function createOpsRepository(db: DbClient) {
         return rows(await db.from('shipment_lines').select('shipment_id, sku_id, qty_pieces').in('shipment_id', [...shipmentIds]));
       },
       async varianceCases(filter: { shipmentIds?: readonly string[]; status?: string }) {
-        let q = db.from('variance_cases').select('id, shipment_id, carrier_user_id, sku_id, qty_pieces, value_kobo::text, status, resolution_note, created_at');
+        let q = db.from('variance_cases').select('id, shipment_id, carrier_user_id, sku_id, qty_pieces, value_kobo::text, status, kind, resolution_note, created_at');
         if (filter.shipmentIds) q = q.in('shipment_id', [...filter.shipmentIds]);
         if (filter.status) q = q.eq('status', filter.status);
         return rows(await q);
@@ -166,7 +166,15 @@ export function createOpsRepository(db: DbClient) {
           p_lines: i.lines.map((l) => ({ sku_id: l.skuId, qty_pieces: l.qtyPieces })) as never,
           p_lat: i.lat, p_lng: i.lng, p_accuracy_m: i.accuracyM, p_idempotency_key: i.idempotencyKey,
         }) as Promise<unknown> as Promise<{ sale_id: string; total_kobo: string; replayed: boolean }>,
-      resolveVariance: (caseId: string, decision: 'write_off' | 'charge_agent', note: string) =>
+      async reviewItems(orgId: string, status = 'open') {
+        return rows(await db.from('review_items')
+          .select('id, event_id, agent_user_id, reason, status, created_at, sync_events(type, payload, client_ts, lat, lng), profiles!review_items_agent_user_id_fkey(full_name)')
+          .eq('org_id', orgId).eq('status', status).order('created_at'));
+      },
+      acceptIntoVariance: (itemId: string, note: string) =>
+        command(db, 'review_accept_into_variance', { p_item_id: itemId, p_note: note }) as Promise<unknown> as Promise<{ unrecorded_pieces: number }>,
+      dismissReview: (itemId: string, reason: string) => command(db, 'review_dismiss', { p_item_id: itemId, p_reason: reason }),
+      resolveVariance: (caseId: string, decision: 'write_off' | 'charge_agent' | 'link_handover', note: string) =>
         command(db, 'resolve_variance', { p_case_id: caseId, p_decision: decision, p_note: note }),
     },
   };

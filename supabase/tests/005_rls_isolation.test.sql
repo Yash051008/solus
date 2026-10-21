@@ -3,7 +3,7 @@
 -- distributor B (abuja-central), in EVERY table. Plus positive scoping checks per role.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(277);
+select plan(301);
 
 create function pg_temp.login(p_handle text) returns void language plpgsql as $$
 begin
@@ -67,7 +67,9 @@ insert into table_keys values
   ('shipments', 'x.id::text'), ('deliveries', 'x.id::text'), ('delivery_lines', 'x.id::text'),
   ('order_disputes', 'x.id::text'), ('shipment_returns', 'x.id::text'),
   ('stock_requests', 'x.id::text'), ('stock_request_lines', 'x.id::text'), ('shipment_lines', 'x.id::text'),
-  ('push_sales', 'x.id::text'), ('push_sale_lines', 'x.id::text'), ('variance_cases', 'x.id::text');
+  ('push_sales', 'x.id::text'), ('push_sale_lines', 'x.id::text'), ('variance_cases', 'x.id::text'),
+  ('agent_devices', 'x.device_id::text'), ('sync_events', 'x.event_id::text'), ('agent_visits', 'x.id::text'),
+  ('review_items', 'x.id::text');
 
 select is(
   (select array_agg(tablename::text order by 1) from pg_tables
@@ -133,7 +135,11 @@ union all select 'shipment_lines', l.id::text from public.shipment_lines l join 
 union all select 'push_sales', p.id::text from public.push_sales p join public.shipments s on s.id = p.shipment_id where s.org_id = (select id from b)
 union all select 'push_sale_lines', l.id::text from public.push_sale_lines l join public.push_sales p on p.id = l.sale_id
           join public.shipments s on s.id = p.shipment_id where s.org_id = (select id from b)
-union all select 'variance_cases', id::text from public.variance_cases where org_id = (select id from b);
+union all select 'variance_cases', id::text from public.variance_cases where org_id = (select id from b)
+union all select 'agent_devices', device_id::text from public.agent_devices where org_id = (select id from b)
+union all select 'sync_events', event_id::text from public.sync_events where org_id = (select id from b)
+union all select 'agent_visits', id::text from public.agent_visits where org_id = (select id from b)
+union all select 'review_items', id::text from public.review_items where org_id = (select id from b);
 
 select is(
   (select array_agg(k.tbl order by 1) from table_keys k

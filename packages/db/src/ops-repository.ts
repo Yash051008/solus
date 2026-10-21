@@ -24,7 +24,7 @@ export function createOpsRepository(db: DbClient) {
           ...(i.cartonPieces === undefined ? {} : { p_carton_pieces: i.cartonPieces }),
         }),
       async currentPrices(distributorId: string) {
-        return rows(await db.from('v_current_prices').select('sku_id, uom_code, price_kobo').eq('distributor_org_id', distributorId));
+        return rows(await db.from('v_current_prices').select('sku_id, uom_code, price_kobo::text').eq('distributor_org_id', distributorId));
       },
     },
 
@@ -56,7 +56,7 @@ export function createOpsRepository(db: DbClient) {
           p_lines: toLines(i.lines) as never, p_idempotency_key: i.idempotencyKey,
         }) as Promise<unknown> as Promise<{ order_id: string; status: string; routing_reason: string | null; replayed: boolean }>,
       async list(filter: { retailerOrgId?: string; distributorId?: string; statuses?: string[] }) {
-        let q = db.from('v_orders').select('*').order('created_at', { ascending: false }).limit(100);
+        let q = db.from('v_orders').select('id, distributor_org_id, retailer_org_id, status, routing_reason, routing_decision, placed_by_role, created_at, confirmed_at, cancelled_reason, total_kobo::text').order('created_at', { ascending: false }).limit(100);
         if (filter.retailerOrgId) q = q.eq('retailer_org_id', filter.retailerOrgId);
         if (filter.distributorId) q = q.eq('distributor_org_id', filter.distributorId);
         if (filter.statuses) q = q.in('status', filter.statuses as never);
@@ -64,7 +64,7 @@ export function createOpsRepository(db: DbClient) {
       },
       async lines(orderIds: readonly string[]) {
         if (orderIds.length === 0) return [];
-        return rows(await db.from('order_lines').select('id, order_id, sku_id, uom_code, uom_qty, qty_pieces, line_amount_kobo').in('order_id', [...orderIds]));
+        return rows(await db.from('order_lines').select('id, order_id, sku_id, uom_code, uom_qty, qty_pieces, line_amount_kobo::text').in('order_id', [...orderIds]));
       },
       async allocations(filter: { orderIds?: readonly string[]; warehouseId?: string; statuses?: string[]; batchId?: string }) {
         let q = db.from('order_allocations').select('id, order_id, order_line_id, sku_id, warehouse_id, qty_pieces, status, batch_id');
@@ -98,7 +98,7 @@ export function createOpsRepository(db: DbClient) {
       },
       async deliveries(orderIds: readonly string[]) {
         if (orderIds.length === 0) return [];
-        return rows(await db.from('deliveries').select('id, shipment_id, order_id, invoiced_kobo, geofence_ok, geofence_reason, distance_m, recorded_at, photo_path').in('order_id', [...orderIds]));
+        return rows(await db.from('deliveries').select('id, shipment_id, order_id, invoiced_kobo::text, geofence_ok, geofence_reason, distance_m, recorded_at, photo_path').in('order_id', [...orderIds]));
       },
       createBatch: (warehouseId: string, orderIds: readonly string[]) =>
         command(db, 'create_batch', { p_warehouse_id: warehouseId, p_order_ids: [...orderIds] }),

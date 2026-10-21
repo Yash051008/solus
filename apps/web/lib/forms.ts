@@ -35,7 +35,7 @@ function userMessage(err: unknown): string {
 }
 
 /** Runs a mutation, then redirects back with a flash message. Never swallows Next's redirect signal. */
-export async function mutate(backTo: string, fn: () => Promise<unknown>, okMessage: string): Promise<never> {
+export async function mutate(backTo: string, fn: () => Promise<unknown>, okMessage: string | (() => string)): Promise<never> {
   let error: string | undefined;
   try {
     await fn();
@@ -44,6 +44,6 @@ export async function mutate(backTo: string, fn: () => Promise<unknown>, okMessa
   }
   const sep = backTo.includes('?') ? '&' : '?';
   redirect(error === undefined
-    ? `${backTo}${sep}ok=${encodeURIComponent(okMessage)}`
+    ? `${backTo}${sep}ok=${encodeURIComponent(typeof okMessage === 'string' ? okMessage : okMessage())}`
     : `${backTo}${sep}error=${encodeURIComponent(error)}`);
 }

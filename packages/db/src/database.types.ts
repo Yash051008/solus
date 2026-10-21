@@ -23,6 +23,9 @@ export type Database = {
 "apply_bps":
 { Args: { "p_amount_kobo": number,"p_bps": number,"p_mode"?: string }; Returns: number
                            },
+"apply_push_sale":
+{ Args: { "p_accuracy_m": number,"p_agent_user_id": string,"p_idempotency_key": string,"p_lat": number,"p_lines": Json,"p_lng": number,"p_retailer_org_id": string,"p_shipment_id": string }; Returns: Json
+                           },
 "can_manage_branch":
 { Args: { "p_branch_id": string }; Returns: boolean
                            },
@@ -59,6 +62,12 @@ export type Database = {
                            },
 "close_shipment":
 { Args: { "p_shipment_id": string }; Returns: undefined
+                           },
+"complete_push_handover":
+{ Args: { "p_shipment_id": string }; Returns: undefined
+                           },
+"complete_push_return":
+{ Args: { "p_payload_hash": string,"p_shipment_id": string }; Returns: string
                            },
 "confirm_delivery":
 { Args: { "p_order_id": string }; Returns: undefined
@@ -105,6 +114,9 @@ export type Database = {
 "decide_split":
 { Args: { "p_choice": string,"p_order_id": string }; Returns: undefined
                            },
+"decide_stock_request":
+{ Args: { "p_approve": boolean,"p_approved"?: Json,"p_reason"?: string,"p_request_id": string }; Returns: string
+                           },
 "decline_dispatch":
 { Args: { "p_reason": string,"p_shipment_id": string }; Returns: undefined
                            },
@@ -130,6 +142,11 @@ export type Database = {
                            },
 "is_platform_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"issue_otp_code":
+{ Args: { "p_challenge_id": string }; Returns: {
+              "code": string,"phone_e164": string,"purpose": string
+            }[]
                            },
 "kyc_level":
 { Args: { "p_org_id": string }; Returns: number
@@ -160,6 +177,12 @@ export type Database = {
 "onboard_organisation":
 { Args: { "p_admin_user_id": string,"p_kind": Database["public"]['Enums']["org_kind"],"p_name": string,"p_slug": string }; Returns: string
                            },
+"open_otp_challenge":
+{ Args: { "p_initiator": string,"p_payload_hash"?: string,"p_purpose": string,"p_recipient": string,"p_subject_id": string,"p_subject_kind": string }; Returns: string
+                           },
+"piece_price_kobo":
+{ Args: { "p_distributor_id": string,"p_sku_id": string }; Returns: number
+                           },
 "place_order":
 { Args: { "p_distributor_id": string,"p_idempotency_key": string,"p_lines": Json,"p_retailer_org_id": string }; Returns: Json
                            },
@@ -181,6 +204,9 @@ export type Database = {
 "record_kyc_result":
 { Args: { "p_id_hash": string,"p_id_type": string,"p_org_id": string,"p_outcome": string,"p_provider": string,"p_provider_ref": string,"p_subject_user_id": string }; Returns: Json
                            },
+"record_push_sale":
+{ Args: { "p_accuracy_m": number,"p_idempotency_key": string,"p_lat": number,"p_lines": Json,"p_lng": number,"p_retailer_org_id": string,"p_shipment_id": string }; Returns: Json
+                           },
 "record_receipt":
 { Args: { "p_idempotency_key": string,"p_lines": Json,"p_reference": string,"p_warehouse_id": string }; Returns: string
                            },
@@ -200,6 +226,9 @@ export type Database = {
                            },
 "request_distributor":
 { Args: { "p_distributor_id": string,"p_retailer_org_id": string }; Returns: string
+                           },
+"request_stock":
+{ Args: { "p_lines": Json,"p_note"?: string,"p_warehouse_id": string }; Returns: string
                            },
 "request_to_join":
 { Args: { "p_distributor_id": string,"p_full_name": string,"p_note"?: string,"p_phone_e164": string,"p_role": Database["public"]['Enums']["member_role"] }; Returns: string
@@ -225,6 +254,9 @@ export type Database = {
 "resolve_transfer_shortage":
 { Args: { "p_reason": string,"p_transfer_id": string }; Returns: undefined
                            },
+"resolve_variance":
+{ Args: { "p_case_id": string,"p_decision": string,"p_note": string }; Returns: string
+                           },
 "round_div":
 { Args: { "p_den": number,"p_mode"?: string,"p_num": number }; Returns: number
                            },
@@ -237,6 +269,15 @@ export type Database = {
 "set_warehouse_active":
 { Args: { "p_active": boolean,"p_warehouse_id": string }; Returns: undefined
                            },
+"settle_carrier":
+{ Args: { "p_shipment_id": string }; Returns: string
+                           },
+"start_handover":
+{ Args: { "p_shipment_id": string }; Returns: string
+                           },
+"start_push_return":
+{ Args: { "p_lines": Json,"p_shipment_id": string }; Returns: string
+                           },
 "start_return":
 { Args: { "p_lines": Json,"p_shipment_id": string }; Returns: undefined
                            },
@@ -248,6 +289,9 @@ export type Database = {
                            },
 "upsert_my_profile":
 { Args: { "p_full_name": string,"p_phone_e164": string }; Returns: undefined
+                           },
+"verify_otp":
+{ Args: { "p_challenge_id": string,"p_code": string }; Returns: Json
                            },
 "visible_account_ids":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
@@ -1058,6 +1102,82 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"push_sale_lines": {
+                  Row: {
+                    "amount_kobo": number | null,"id": string,"qty_pieces": number,"sale_id": string,"sku_id": string,"unit_price_kobo": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount_kobo"?: never,"id"?: string,"qty_pieces": number,"sale_id": string,"sku_id": string,"unit_price_kobo": number
+                  }
+                  Update: {
+                    "amount_kobo"?: never,"id"?: string,"qty_pieces"?: number,"sale_id"?: string,"sku_id"?: string,"unit_price_kobo"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_sale_lines_sale_id_fkey"
+      columns: ["sale_id"]
+isOneToOne: false
+      referencedRelation: "push_sales"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "push_sale_lines_sku_id_fkey"
+      columns: ["sku_id"]
+isOneToOne: false
+      referencedRelation: "skus"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"push_sales": {
+                  Row: {
+                    "accuracy_m": number,"agent_user_id": string,"created_at": string,"distance_m": number | null,"id": string,"idempotency_key": string,"journal_id": string | null,"lat": number,"lng": number,"retailer_org_id": string,"shipment_id": string,"total_kobo": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "accuracy_m": number,"agent_user_id": string,"created_at"?: string,"distance_m"?: number | null,"id"?: string,"idempotency_key": string,"journal_id"?: string | null,"lat": number,"lng": number,"retailer_org_id": string,"shipment_id": string,"total_kobo": number
+                  }
+                  Update: {
+                    "accuracy_m"?: number,"agent_user_id"?: string,"created_at"?: string,"distance_m"?: number | null,"id"?: string,"idempotency_key"?: string,"journal_id"?: string | null,"lat"?: number,"lng"?: number,"retailer_org_id"?: string,"shipment_id"?: string,"total_kobo"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_sales_agent_user_id_fkey"
+      columns: ["agent_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "push_sales_journal_id_fkey"
+      columns: ["journal_id"]
+isOneToOne: false
+      referencedRelation: "journals"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "push_sales_retailer_org_id_fkey"
+      columns: ["retailer_org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "push_sales_retailer_org_id_fkey"
+      columns: ["retailer_org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "push_sales_shipment_id_fkey"
+      columns: ["shipment_id"]
+isOneToOne: false
+      referencedRelation: "shipments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "push_sales_shipment_id_fkey"
+      columns: ["shipment_id"]
+isOneToOne: false
+      referencedRelation: "v_shipment_reconciliation"
+      referencedColumns: ["shipment_id"]
+    }
+                  ]
                 },"receipts": {
                   Row: {
                     "created_at": string,"id": string,"idempotency_key": string,"org_id": string,"received_by": string,"reference": string,"warehouse_id": string
@@ -1102,16 +1222,48 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"shipment_returns": {
+                },"shipment_lines": {
                   Row: {
-                    "confirmed_at": string | null,"counted_by": string,"created_at": string,"id": string,"qty_pieces": number,"shipment_id": string,"sku_id": string
+                    "id": string,"qty_pieces": number,"shipment_id": string,"sku_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "confirmed_at"?: string | null,"counted_by": string,"created_at"?: string,"id"?: string,"qty_pieces": number,"shipment_id": string,"sku_id": string
+                    "id"?: string,"qty_pieces": number,"shipment_id": string,"sku_id": string
                   }
                   Update: {
-                    "confirmed_at"?: string | null,"counted_by"?: string,"created_at"?: string,"id"?: string,"qty_pieces"?: number,"shipment_id"?: string,"sku_id"?: string
+                    "id"?: string,"qty_pieces"?: number,"shipment_id"?: string,"sku_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "shipment_lines_shipment_id_fkey"
+      columns: ["shipment_id"]
+isOneToOne: false
+      referencedRelation: "shipments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "shipment_lines_shipment_id_fkey"
+      columns: ["shipment_id"]
+isOneToOne: false
+      referencedRelation: "v_shipment_reconciliation"
+      referencedColumns: ["shipment_id"]
+    },{
+      foreignKeyName: "shipment_lines_sku_id_fkey"
+      columns: ["sku_id"]
+isOneToOne: false
+      referencedRelation: "skus"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"shipment_returns": {
+                  Row: {
+                    "confirmed_at": string | null,"counted_by": string,"created_at": string,"damaged": number,"id": string,"qty_pieces": number,"shipment_id": string,"sku_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "confirmed_at"?: string | null,"counted_by": string,"created_at"?: string,"damaged"?: number,"id"?: string,"qty_pieces": number,"shipment_id": string,"sku_id": string
+                  }
+                  Update: {
+                    "confirmed_at"?: string | null,"counted_by"?: string,"created_at"?: string,"damaged"?: number,"id"?: string,"qty_pieces"?: number,"shipment_id"?: string,"sku_id"?: string
                   }
                   Relationships: [
                     {
@@ -1332,6 +1484,100 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"stock_request_lines": {
+                  Row: {
+                    "id": string,"qty_approved": number | null,"qty_pieces": number,"request_id": string,"sku_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"qty_approved"?: number | null,"qty_pieces": number,"request_id": string,"sku_id": string
+                  }
+                  Update: {
+                    "id"?: string,"qty_approved"?: number | null,"qty_pieces"?: number,"request_id"?: string,"sku_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_request_lines_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
+      referencedRelation: "stock_requests"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "stock_request_lines_sku_id_fkey"
+      columns: ["sku_id"]
+isOneToOne: false
+      referencedRelation: "skus"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"stock_requests": {
+                  Row: {
+                    "agent_user_id": string,"carrier_location_id": string,"created_at": string,"decided_at": string | null,"decided_by": string | null,"decision_reason": string | null,"id": string,"note": string | null,"org_id": string,"shipment_id": string | null,"status": string,"warehouse_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "agent_user_id": string,"carrier_location_id": string,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"decision_reason"?: string | null,"id"?: string,"note"?: string | null,"org_id": string,"shipment_id"?: string | null,"status"?: string,"warehouse_id": string
+                  }
+                  Update: {
+                    "agent_user_id"?: string,"carrier_location_id"?: string,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"decision_reason"?: string | null,"id"?: string,"note"?: string | null,"org_id"?: string,"shipment_id"?: string | null,"status"?: string,"warehouse_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_requests_agent_user_id_fkey"
+      columns: ["agent_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "stock_requests_carrier_location_id_fkey"
+      columns: ["carrier_location_id"]
+isOneToOne: false
+      referencedRelation: "stock_locations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "stock_requests_decided_by_fkey"
+      columns: ["decided_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "stock_requests_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "stock_requests_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "stock_requests_shipment_id_fkey"
+      columns: ["shipment_id"]
+isOneToOne: false
+      referencedRelation: "shipments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "stock_requests_shipment_id_fkey"
+      columns: ["shipment_id"]
+isOneToOne: false
+      referencedRelation: "v_shipment_reconciliation"
+      referencedColumns: ["shipment_id"]
+    },{
+      foreignKeyName: "stock_requests_warehouse_id_fkey"
+      columns: ["warehouse_id"]
+isOneToOne: false
+      referencedRelation: "v_warehouses"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "stock_requests_warehouse_id_fkey"
+      columns: ["warehouse_id"]
+isOneToOne: false
+      referencedRelation: "warehouses"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"supply_relationships": {
                   Row: {
                     "created_at": string,"distributor_kind": Database["public"]['Enums']["org_kind"],"distributor_org_id": string,"manufacturer_kind": Database["public"]['Enums']["org_kind"],"manufacturer_org_id": string
@@ -1493,6 +1739,74 @@ isOneToOne: false
       columns: ["to_warehouse_id"]
 isOneToOne: false
       referencedRelation: "warehouses"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"variance_cases": {
+                  Row: {
+                    "carrier_user_id": string,"created_at": string,"id": string,"org_id": string,"qty_pieces": number,"raised_journal_id": string | null,"resolution_note": string | null,"resolved_at": string | null,"resolved_by": string | null,"resolved_journal_id": string | null,"shipment_id": string,"sku_id": string,"status": string,"value_kobo": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "carrier_user_id": string,"created_at"?: string,"id"?: string,"org_id": string,"qty_pieces": number,"raised_journal_id"?: string | null,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"resolved_journal_id"?: string | null,"shipment_id": string,"sku_id": string,"status"?: string,"value_kobo": number
+                  }
+                  Update: {
+                    "carrier_user_id"?: string,"created_at"?: string,"id"?: string,"org_id"?: string,"qty_pieces"?: number,"raised_journal_id"?: string | null,"resolution_note"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"resolved_journal_id"?: string | null,"shipment_id"?: string,"sku_id"?: string,"status"?: string,"value_kobo"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "variance_cases_carrier_user_id_fkey"
+      columns: ["carrier_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "variance_cases_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "variance_cases_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "variance_cases_raised_journal_id_fkey"
+      columns: ["raised_journal_id"]
+isOneToOne: false
+      referencedRelation: "journals"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "variance_cases_resolved_by_fkey"
+      columns: ["resolved_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "variance_cases_resolved_journal_id_fkey"
+      columns: ["resolved_journal_id"]
+isOneToOne: false
+      referencedRelation: "journals"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "variance_cases_shipment_id_fkey"
+      columns: ["shipment_id"]
+isOneToOne: false
+      referencedRelation: "shipments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "variance_cases_shipment_id_fkey"
+      columns: ["shipment_id"]
+isOneToOne: false
+      referencedRelation: "v_shipment_reconciliation"
+      referencedColumns: ["shipment_id"]
+    },{
+      foreignKeyName: "variance_cases_sku_id_fkey"
+      columns: ["sku_id"]
+isOneToOne: false
+      referencedRelation: "skus"
       referencedColumns: ["id"]
     }
                   ]

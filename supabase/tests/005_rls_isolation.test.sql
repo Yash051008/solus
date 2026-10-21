@@ -3,7 +3,7 @@
 -- distributor B (abuja-central), in EVERY table. Plus positive scoping checks per role.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(241);
+select plan(277);
 
 create function pg_temp.login(p_handle text) returns void language plpgsql as $$
 begin
@@ -65,7 +65,9 @@ insert into table_keys values
   ('receipts', 'x.id::text'), ('adjustment_requests', 'x.id::text'), ('transfers', 'x.id::text'),
   ('transfer_lines', 'x.id::text'), ('order_allocations', 'x.id::text'), ('batches', 'x.id::text'),
   ('shipments', 'x.id::text'), ('deliveries', 'x.id::text'), ('delivery_lines', 'x.id::text'),
-  ('order_disputes', 'x.id::text'), ('shipment_returns', 'x.id::text');
+  ('order_disputes', 'x.id::text'), ('shipment_returns', 'x.id::text'),
+  ('stock_requests', 'x.id::text'), ('stock_request_lines', 'x.id::text'), ('shipment_lines', 'x.id::text'),
+  ('push_sales', 'x.id::text'), ('push_sale_lines', 'x.id::text'), ('variance_cases', 'x.id::text');
 
 select is(
   (select array_agg(tablename::text order by 1) from pg_tables
@@ -122,7 +124,16 @@ union all select 'delivery_lines', dl.id::text from public.delivery_lines dl joi
 union all select 'order_disputes', od.id::text from public.order_disputes od join public.orders o on o.id = od.order_id
           where o.distributor_org_id = (select id from b)
 union all select 'shipment_returns', sr.id::text from public.shipment_returns sr join public.shipments s on s.id = sr.shipment_id
-          where s.org_id = (select id from b);
+          where s.org_id = (select id from b)
+union all select 'stock_requests', id::text from public.stock_requests where org_id = (select id from b)
+union all select 'stock_request_lines', l.id::text from public.stock_request_lines l join public.stock_requests r on r.id = l.request_id
+          where r.org_id = (select id from b)
+union all select 'shipment_lines', l.id::text from public.shipment_lines l join public.shipments s on s.id = l.shipment_id
+          where s.org_id = (select id from b)
+union all select 'push_sales', p.id::text from public.push_sales p join public.shipments s on s.id = p.shipment_id where s.org_id = (select id from b)
+union all select 'push_sale_lines', l.id::text from public.push_sale_lines l join public.push_sales p on p.id = l.sale_id
+          join public.shipments s on s.id = p.shipment_id where s.org_id = (select id from b)
+union all select 'variance_cases', id::text from public.variance_cases where org_id = (select id from b);
 
 select is(
   (select array_agg(k.tbl order by 1) from table_keys k

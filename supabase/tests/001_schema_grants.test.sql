@@ -2,7 +2,7 @@
 -- by clients, auth.uid() only behind the seam, audit attached to every business table.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(12);
 
 select is(
   (select array_agg(tablename::text order by tablename) from pg_tables
@@ -69,7 +69,10 @@ select is(
        'create_transfer', 'dispatch_transfer', 'receive_transfer', 'resolve_transfer_shortage',
        'place_order', 'decide_split', 'cancel_order', 'create_batch', 'mark_batch_packed', 'dispatch_batch',
        'accept_dispatch', 'decline_dispatch', 'record_delivery', 'confirm_delivery', 'dispute_delivery',
-       'start_return', 'confirm_return', 'close_shipment')),
+       'start_return', 'confirm_return', 'close_shipment',
+       -- Phase 5a commands
+       'verify_otp', 'request_stock', 'decide_stock_request', 'start_handover', 'record_push_sale',
+       'start_push_return', 'resolve_variance')),
   null,
   'authenticated can execute only allow-listed functions (no ledger primitives, no adapter-only functions)'
 );
@@ -104,6 +107,9 @@ select is(
   'every business table (all but the two projections) has the audit trigger'
 );
 
+select ok(not has_function_privilege('authenticated', 'app.issue_otp_code(uuid)', 'execute')
+          and has_function_privilege('service_role', 'app.issue_otp_code(uuid)', 'execute'),
+          'only the server SMS adapter can obtain OTP codes');
 select ok(not has_function_privilege('authenticated', 'app.record_kyc_result(uuid,uuid,text,text,text,text,text)', 'execute'),
           'clients cannot record their own KYC result');
 select ok(has_function_privilege('service_role', 'app.record_kyc_result(uuid,uuid,text,text,text,text,text)', 'execute'),

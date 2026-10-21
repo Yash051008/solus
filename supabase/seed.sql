@@ -412,3 +412,46 @@ begin
   perform set_config('request.jwt.claims', '', false);
 end;
 $$;
+
+-- Phase 5a demo: the spec's push example per distributor (100 picked, 70 sold, 25 returned, 3 damaged
+-- -> 2 pcs variance pending), through real OTP issue + verify.
+do $$
+declare
+  r record;
+  v_req uuid;
+  v_ship uuid;
+  v_chal uuid;
+  v_code text;
+  v_res jsonb;
+  v_sku uuid := pg_temp.sku('NDL-JMB-120G');
+begin
+  for r in select * from (values
+    ('lp.agent1', 'lp.bm.ikeja', 'lp.wh.ikeja', 'Ikeja Main',   'retailer-02', 6.6250, 3.3550),
+    ('ac.agent1', 'ac.bm.wuse',  'ac.wh.wuse',  'Wuse Central', 'retailer-16', 9.0850, 7.4800)
+  ) as t(agent, bm, staff, wh_name, shop_slug, lat, lng)
+  loop
+    perform pg_temp.act_as(r.agent);
+    v_req := app.request_stock(pg_temp.wh(r.wh_name),
+      jsonb_build_array(jsonb_build_object('sku_id', v_sku, 'uom_code', 'piece', 'uom_qty', 100)), 'morning route');
+    perform pg_temp.act_as(r.bm);
+    v_ship := app.decide_stock_request(v_req, true);
+
+    perform pg_temp.act_as(r.staff);
+    v_chal := app.start_handover(v_ship);
+    select code into v_code from app.issue_otp_code(v_chal);       -- what the SMS adapter would send
+    v_res := app.verify_otp(v_chal, v_code);
+    if not (v_res->>'ok')::boolean then raise exception 'seed handover OTP failed: %', v_res; end if;
+
+    perform pg_temp.act_as(r.agent);
+    perform app.record_push_sale(v_ship, pg_temp.org(r.shop_slug),
+      jsonb_build_array(jsonb_build_object('sku_id', v_sku, 'qty_pieces', 70)), r.lat, r.lng, 7, 'seed:push_sale:' || r.agent);
+
+    perform pg_temp.act_as(r.staff);
+    v_chal := app.start_push_return(v_ship, jsonb_build_array(jsonb_build_object('sku_id', v_sku, 'qty_pieces', 25, 'damaged', 3)));
+    select code into v_code from app.issue_otp_code(v_chal);
+    v_res := app.verify_otp(v_chal, v_code);
+    if v_res->>'result' <> 'reconciling' then raise exception 'seed push return expected reconciling: %', v_res; end if;
+  end loop;
+  perform set_config('request.jwt.claims', '', false);
+end;
+$$;

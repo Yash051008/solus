@@ -6,22 +6,42 @@
 | 2 | Schema, migrations, ledgers + projections, RLS, seed, invariant/RLS/concurrency tests | Done | 2026-10-21 |
 | 3 | Auth, per-role routing, registration + approval, KYC interface + mock, geofence, branch/territory/warehouse mgmt | Done | 2026-10-21 |
 | 4 | Catalogue, inventory, transfers, pull flow + routing, batching/packing UI, delivery + e-POD + partial/missing | **Done** (4a DB `9278024`, 4b screens `4c4fcc9`..`6bd1df1`) | 2026-10-21 |
-| 5a | Push: request → approve → OTP handover → return → reconciliation (variance approval, close blocking) | Not started | |
+| 5a | Push: request → approve → OTP handover → return → reconciliation (variance approval, close blocking) | **Done** (`7520c72`, `f04d1de`, `b9911bc`) | 2026-10-22 |
 | 5b | Wallet ledger, trade credit + credit OTP, payment webhooks + reconciliation, offline agent app + sync | Not started | |
 | 6 | Dashboards, notifications, support tickets, hardening, E2E of both flows on the same stock | Not started | |
 
-## ▶ Resume here (session paused 2026-10-21)
-- **Next up: Phase 5a.** Push flow: stock request → approve → OTP handover → return → reconciliation with
-  `variance_cases`, manager variance approval, shipment-close blocking. Also: the OTP infrastructure
-  (`private.otp_challenges`, `SmsProvider` interface + mock, ADR-0006 provider research first), and
-  resolving pull-flow shipments left `reconciling` by missing stock.
-- Everything is committed. `npm run test:all` passed from clean at `6bd1df1`: 454 pgTAP, 24 Node tests,
-  typecheck, web build.
-- To run locally: `npm run db:start` → `npm run db:reset` → `npm run web:env` →
-  `npm run dev --workspace @solus/web` → http://localhost:3100. Logins (password `SolusDev-2026!`):
-  `retailer01@`, `lp.wh.ikeja@`, `lp.driver1@`, `lp.bm.ikeja@`, `lp.admin@` (all `@solus.test`).
-- Working style the user asked for: gated phases, short answers without long design recaps, typecheck +
-  browser check + commit per step, stop and wait for "next".
+## ▶ Resume here
+- **Next up: Phase 5b.** Wallet ledger + payment provider research (ADR-0008: Paystack DVA / Monnify /
+  Flutterwave), signed idempotent webhooks (duplicate test), wallet/credit settlement with credit OTP
+  (`otp_challenges` purpose `credit` is already reserved), cash remittance, and the Expo offline agent app
+  with event sync and accept-into-variance (`app.apply_push_sale` is the core the sync path will call).
+- Last verified: `npm run test:all` passes from clean at `b9911bc` (530 pgTAP, 30 Node tests,
+  typecheck, web build).
+- Run locally: `npm run db:start` → `npm run db:reset` → `npm run web:env` →
+  `npm run dev --workspace @solus/web` → http://localhost:3100. Password `SolusDev-2026!` for
+  `retailer01@`, `lp.wh.ikeja@`, `lp.driver1@`, `lp.agent2@`, `lp.bm.ikeja@`, `lp.admin@` (`@solus.test`).
+  With the mock SMS provider, the agent's /field page shows the code "received by SMS".
+- Working style: gated steps, short replies, typecheck + browser check + commit per step, stop for "next".
+
+## Phase 5a: what exists
+- ADR-0006: our own OTPs. bcrypt-hashed, 5-minute expiry, 5 attempts, max 3 issues, initiator-only,
+  bound to the subject and (for returns) the exact count. Termii preferred (dnd route), Africa's Talking
+  unverified.
+- DB:
+  - `private.otp_challenges`, `issue_otp_code` (service_role only), `verify_otp` (failures are returned, not raised)
+  - stock requests and approval (separation of duties, one active shipment per agent)
+  - OTP handover; geofenced online push sales (`apply_push_sale` core, `cash_collected` journal)
+  - OTP-bound returns with damage
+  - `variance_cases` with `variance_raised` journals for push and delivery runs
+  - `resolve_variance` (write off / charge agent) and close blocking
+  - seed runs the spec example (100 = 70 + 25 + 3 + 2) per distributor
+- Tests: `010_push_flow` (39 assertions); SMS contract suite plus the OTP send adapter test.
+- Web: distributor **Agent stock** page (approve, OTP handover/return, enter code, resolve variance) and
+  agent panel on `/field` (request stock, dev SMS inbox, geofenced cash sale). Browser-checked
+  2026-10-22: request → approve → wrong code rejected ("4 attempts left", form kept) → right code →
+  handover; sale refused away from the shop, accepted at it (₦1,800); seeded variance written off.
+- Known gaps: the agent return → OTP → variance path wasn't clicked through in the browser (covered by
+  010 and the seed). Phone verification at registration is still not done. No real SMS adapter yet.
 
 ## Phase 4: what exists
 - **4a (DB):**

@@ -8,23 +8,35 @@
 | 4 | Catalogue, inventory, transfers, pull flow + routing, batching/packing UI, delivery + e-POD + partial/missing | **Done** (4a DB `9278024`, 4b screens `4c4fcc9`..`6bd1df1`) | 2026-10-21 |
 | 5a | Push: request → approve → OTP handover → return → reconciliation (variance approval, close blocking) | **Done** (`7520c72`, `f04d1de`, `b9911bc`) | 2026-10-22 |
 | 5b | Wallet ledger, trade credit + credit OTP, payment webhooks + reconciliation, offline agent app + sync | **Done** (5b-2 `3623d19`, 5b-1 this commit) | 2026-10-22 |
-| 6 | Dashboards, notifications, support tickets, hardening, E2E of both flows on the same stock | 6a done (this commit); 6b next | 2026-10-22 |
+| 6 | Dashboards, notifications, support tickets, hardening, E2E of both flows on the same stock | **Done** (6a `efae8dd`, 6b this commit) | 2026-10-22 |
 
 ## ▶ Resume here
 Autonomous run (user instruction, 2026-10-22): build 5b-2 → 5b-1 → Phase 6 without waiting for "next";
 after each step typecheck + `npm run test:all` + commit + update this section. Final report at the end.
-- **Done:** 5b-2 offline agent app (`3623d19`), 5b-1 payments (`5382057`), 6a dashboards + notifications +
-  support (this commit): migration `20261028000100`, pgTAP `013`, pages `/inbox`, `/support`,
-  `/distributor/[id]/support`, the dashboard at `/distributor/[id]`, and sell-out totals on `/manufacturer/[id]`.
-- **Next:** 6b. Hardening: pgTAP check that every security-definer function pins `search_path`, an index
-  audit for FK/policy columns. Then one Node E2E test of pull + push on the same SKU and warehouse
-  (order → batch → driver → e-POD → wallet + credit OTP payment; agent request → OTP handover → offline
-  sync with duplicate + rejection → accept into variance → return OTP → resolve), with invariants checked
-  at the end. Then `db:reset` and the final report.
-- Last verified: `npm run test:all` passes (671 pgTAP, 43 Node tests, typecheck, web build, Expo Android bundle).
+- **All phases built.** 5b-2 `3623d19`, 5b-1 `5382057`, 6a `efae8dd`, 6b (this commit): hardening migration
+  `20261029000100` (covering index on all 97 unindexed FKs, RLS on `private.otp_challenges`), pgTAP
+  `014_hardening` (search_path pinned, FK index coverage, RLS everywhere, no anon execute, no direct client
+  writes, private tables unreadable), and `tests/e2e/both-flows.test.ts` (pull + push on the same SKU and
+  warehouse, with a stock delta check and the projection/journal invariants at the end).
+- **Next (if continuing):** work from "Overall known gaps" below. Real provider adapters need accounts and
+  keys from the user.
+- Last verified: `npm run test:all` passes (677 pgTAP, 44 Node tests, typecheck, web build, Expo Android bundle).
 - Run locally: `npm run db:start` → `npm run db:reset` → `npm run web:env` → `npm run dev --workspace @solus/web`
   (http://localhost:3100). Phone: `npm run agent:env` → `npm run agent:start`, then scan the QR with Expo Go
   (same Wi-Fi). Password `SolusDev-2026!` for every seeded user (`@solus.test`).
+
+## Overall known gaps (end of autonomous run)
+- Real KYC, SMS and payment adapters are not built. Only the mocks plus contract suites exist. Provider docs
+  that were unreachable are marked unverified in ADR-0005/0008 (e.g. Paystack's webhook signature header).
+  Building them needs provider accounts and API keys.
+- The phone app wasn't run on an iOS simulator (no Xcode on this Mac). It's verified by typecheck, a Metro
+  Android bundle, and engine and integration tests. Try it on a real phone with Expo Go.
+- Phone-number verification at registration, plus SMS/push fan-out of notifications (inbox only).
+- The CBN primary circular is unread (bot challenge), and KYC tier limits are unverified. Production with
+  real money must be hosted in Nigeria (ADR-0001).
+- No UI for transfers or price-list publishing (DB commands exist and are tested). No configurable
+  KYC-level gating of credit.
+- The concurrency test still reserves as the owner rather than through `place_order` as many users.
 
 ## Assumptions made without asking (autonomous run)
 - Expo SDK 58 (what Expo Go on phones runs today). No Xcode on this Mac, so no iOS simulator run. The app is

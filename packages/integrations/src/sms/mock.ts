@@ -6,7 +6,10 @@ import type { SmsMessage, SmsProvider, SmsResult } from './types.ts';
 import { SmsProviderError, validateSms } from './types.ts';
 
 type InboxEntry = SmsMessage & { providerMessageId: string; sentAt: Date };
-const inbox: InboxEntry[] = [];
+// On globalThis: bundlers (e.g. Next.js server actions vs. page rendering) may load this module more than
+// once in the same process, and the dev inbox must be shared between those copies.
+const store = globalThis as typeof globalThis & { __solusMockSmsInbox?: InboxEntry[] };
+const inbox: InboxEntry[] = (store.__solusMockSmsInbox ??= []);
 
 export class MockSmsProvider implements SmsProvider {
   readonly name = 'mock';

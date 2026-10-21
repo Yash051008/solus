@@ -87,7 +87,7 @@ export function createOpsRepository(db: DbClient) {
           .order('created_at', { ascending: false }).limit(50));
       },
       async shipments(filter: { warehouseIds?: readonly string[]; carrierLocationIds?: readonly string[] }) {
-        let q = db.from('shipments').select('id, warehouse_id, carrier_location_id, batch_id, status, status_note, created_at')
+        let q = db.from('shipments').select('id, kind, warehouse_id, carrier_location_id, batch_id, status, status_note, created_at')
           .order('created_at', { ascending: false }).limit(50);
         if (filter.warehouseIds) q = q.in('warehouse_id', [...filter.warehouseIds]);
         if (filter.carrierLocationIds) q = q.in('carrier_location_id', [...filter.carrierLocationIds]);
@@ -126,6 +126,48 @@ export function createOpsRepository(db: DbClient) {
         p_lat: i.lat, p_lng: i.lng, p_accuracy_m: i.accuracyM, p_photo_path: i.photoPath,
         p_recipient_name: i.recipientName, p_idempotency_key: i.idempotencyKey,
       }) as Promise<unknown> as Promise<{ delivery_id: string; invoiced_kobo: string; geofence_ok: boolean; geofence_reason: string }>,
+    },
+    push: {
+      async stockRequests(filter: { warehouseIds?: readonly string[]; agentUserId?: string; status?: string }) {
+        let q = db.from('stock_requests').select('id, warehouse_id, agent_user_id, status, note, decision_reason, shipment_id, created_at, stock_request_lines(sku_id, qty_pieces, qty_approved), profiles!stock_requests_agent_user_id_fkey(full_name)')
+          .order('created_at', { ascending: false }).limit(50);
+        if (filter.warehouseIds) q = q.in('warehouse_id', [...filter.warehouseIds]);
+        if (filter.agentUserId) q = q.eq('agent_user_id', filter.agentUserId);
+        if (filter.status) q = q.eq('status', filter.status);
+        return rows(await q);
+      },
+      async shipmentLines(shipmentIds: readonly string[]) {
+        if (shipmentIds.length === 0) return [];
+        return rows(await db.from('shipment_lines').select('shipment_id, sku_id, qty_pieces').in('shipment_id', [...shipmentIds]));
+      },
+      async varianceCases(filter: { shipmentIds?: readonly string[]; status?: string }) {
+        let q = db.from('variance_cases').select('id, shipment_id, carrier_user_id, sku_id, qty_pieces, value_kobo::text, status, resolution_note, created_at');
+        if (filter.shipmentIds) q = q.in('shipment_id', [...filter.shipmentIds]);
+        if (filter.status) q = q.eq('status', filter.status);
+        return rows(await q);
+      },
+      async myPhone(userId: string) {
+        const r = rows(await db.from('profiles').select('phone_e164').eq('user_id', userId));
+        return r[0]?.phone_e164 ?? null;
+      },
+      requestStock: (warehouseId: string, lines: readonly Line[], note?: string) =>
+        command(db, 'request_stock', { p_warehouse_id: warehouseId, p_lines: toLines(lines) as never, ...(note === undefined ? {} : { p_note: note }) }),
+      decideStockRequest: (requestId: string, approve: boolean, reason?: string) =>
+        command(db, 'decide_stock_request', { p_request_id: requestId, p_approve: approve, ...(reason === undefined ? {} : { p_reason: reason }) }),
+      startHandover: (shipmentId: string) => command(db, 'start_handover', { p_shipment_id: shipmentId }),
+      startReturn: (shipmentId: string, lines: readonly { skuId: string; qtyPieces: number; damaged: number }[]) =>
+        command(db, 'start_push_return', { p_shipment_id: shipmentId, p_lines: lines.map((l) => ({ sku_id: l.skuId, qty_pieces: l.qtyPieces, damaged: l.damaged })) as never }),
+      verifyOtp: (challengeId: string, code: string) =>
+        command(db, 'verify_otp', { p_challenge_id: challengeId, p_code: code }) as Promise<unknown> as
+          Promise<{ ok: boolean; reason?: string; attempts_left?: number; purpose?: string; result?: string }>,
+      recordSale: (i: { shipmentId: string; retailerOrgId: string; lines: readonly { skuId: string; qtyPieces: number }[]; lat: number; lng: number; accuracyM: number; idempotencyKey: string }) =>
+        command(db, 'record_push_sale', {
+          p_shipment_id: i.shipmentId, p_retailer_org_id: i.retailerOrgId,
+          p_lines: i.lines.map((l) => ({ sku_id: l.skuId, qty_pieces: l.qtyPieces })) as never,
+          p_lat: i.lat, p_lng: i.lng, p_accuracy_m: i.accuracyM, p_idempotency_key: i.idempotencyKey,
+        }) as Promise<unknown> as Promise<{ sale_id: string; total_kobo: string; replayed: boolean }>,
+      resolveVariance: (caseId: string, decision: 'write_off' | 'charge_agent', note: string) =>
+        command(db, 'resolve_variance', { p_case_id: caseId, p_decision: decision, p_note: note }),
     },
   };
 }

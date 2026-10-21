@@ -4,14 +4,17 @@ import { LocationFields } from '@/components/location-fields';
 import { requireSession } from '@/lib/session';
 import { showQty, skuMap } from '@/lib/catalogue';
 import { acceptShipment, confirmReturn, declineShipment, recordDelivery } from './actions';
+import { AgentPanel } from './agent-panel';
 
 export default async function FieldPage({ searchParams }: { searchParams: FlashParams }) {
   const { ok, error } = await searchParams;
   const { repo, userId, memberships } = await requireSession();
   const field = memberships.filter((m) => (m.role === 'agent' || m.role === 'driver') && m.status === 'active');
   const locations = await repo.fulfilment.myCarrierLocations(userId);
-  const shipments = (await repo.fulfilment.shipments({ carrierLocationIds: locations.map((l) => l.id) }))
+  const allShipments = (await repo.fulfilment.shipments({ carrierLocationIds: locations.map((l) => l.id) }))
     .filter((s) => s.status !== 'cancelled' && s.status !== 'closed');
+  const shipments = allShipments.filter((s) => s.kind === 'delivery');
+  const agentOrg = field.find((m) => m.role === 'agent');
   const batchIds = shipments.map((s) => s.batch_id).filter((b): b is string => b !== null);
   const allocations = (await Promise.all(batchIds.map((b) => repo.orders.allocations({ batchId: b })))).flat();
   const orderIds = [...new Set(allocations.map((a) => a.order_id))];
@@ -22,11 +25,13 @@ export default async function FieldPage({ searchParams }: { searchParams: FlashP
   const shopOf = (orderId: string) => shops.find((s) => s.id === orders.find((o) => o.id === orderId)?.retailer_org_id);
 
   return (
-    <Shell nav={[{ href: '/field', label: 'Deliveries' }]}>
-      <h1>Deliveries</h1>
-      <p className="muted">{field.map((m) => `${m.role} at ${m.orgName}`).join(' · ')}. Push sales on the offline field app arrive in Phase 5b.</p>
+    <Shell nav={[{ href: '/field', label: 'Field' }]}>
+      <h1>Field</h1>
+      <p className="muted">{field.map((m) => `${m.role} at ${m.orgName}`).join(' · ')}. The offline field app arrives in Phase 5b.</p>
       <Flash ok={ok} error={error} />
-      {shipments.length === 0 ? <p className="muted">No shipment assigned to you.</p> : shipments.map((s) => {
+      {agentOrg ? <AgentPanel orgId={agentOrg.orgId} userId={userId} shipment={allShipments.find((s) => s.kind === 'push') ?? null} /> : null}
+      <h2>Deliveries</h2>
+      {shipments.length === 0 ? <p className="muted">No delivery assigned to you.</p> : shipments.map((s) => {
         const mine = allocations.filter((a) => a.batch_id === s.batch_id);
         const ordersInShipment = [...new Set(mine.map((a) => a.order_id))];
         return (

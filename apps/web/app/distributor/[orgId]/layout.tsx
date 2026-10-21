@@ -13,6 +13,7 @@ export default async function DistributorLayout({ children, params }: {
     ...(membership.role === 'warehouse_staff' ? [] : [{ href: `${base}/approvals`, label: 'Approvals' }]),
     { href: `${base}/stock`, label: 'Stock' },
     { href: `${base}/fulfilment`, label: 'Fulfilment' },
+    { href: `${base}/push`, label: 'Agent stock' },
     { href: `${base}/structure`, label: 'Branches & warehouses' },
     ...(membership.role === 'distributor_admin' ? [{ href: `${base}/settings`, label: 'Settings' }] : []),
   ];

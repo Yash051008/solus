@@ -4,11 +4,54 @@
 |---|---|---|---|
 | 1 | CLAUDE.md, architecture, flows, events, risks, hosting + regulatory ADRs | Done | 2026-10-21 |
 | 2 | Schema, migrations, ledgers + projections, RLS, seed, invariant/RLS/concurrency tests | Done | 2026-10-21 |
-| 3 | Auth, per-role routing, registration + approval, KYC interface + mock, geofence, branch/territory/warehouse mgmt | **Done, awaiting "next"** | 2026-10-21 |
-| 4 | Catalogue, inventory, transfers, pull flow + routing, batching/packing UI, delivery + e-POD + partial/missing | Not started | |
+| 3 | Auth, per-role routing, registration + approval, KYC interface + mock, geofence, branch/territory/warehouse mgmt | Done | 2026-10-21 |
+| 4 | Catalogue, inventory, transfers, pull flow + routing, batching/packing UI, delivery + e-POD + partial/missing | **Done** (4a DB `9278024`, 4b screens `4c4fcc9`..`6bd1df1`) | 2026-10-21 |
 | 5a | Push: request → approve → OTP handover → return → reconciliation (variance approval, close blocking) | Not started | |
 | 5b | Wallet ledger, trade credit + credit OTP, payment webhooks + reconciliation, offline agent app + sync | Not started | |
 | 6 | Dashboards, notifications, support tickets, hardening, E2E of both flows on the same stock | Not started | |
+
+## ▶ Resume here (session paused 2026-10-21)
+- **Next up: Phase 5a.** Push flow: stock request → approve → OTP handover → return → reconciliation with
+  `variance_cases`, manager variance approval, shipment-close blocking. Also: the OTP infrastructure
+  (`private.otp_challenges`, `SmsProvider` interface + mock, ADR-0006 provider research first), and
+  resolving pull-flow shipments left `reconciling` by missing stock.
+- Everything is committed. `npm run test:all` passed from clean at `6bd1df1`: 454 pgTAP, 24 Node tests,
+  typecheck, web build.
+- To run locally: `npm run db:start` → `npm run db:reset` → `npm run web:env` →
+  `npm run dev --workspace @solus/web` → http://localhost:3100. Logins (password `SolusDev-2026!`):
+  `retailer01@`, `lp.wh.ikeja@`, `lp.driver1@`, `lp.bm.ikeja@`, `lp.admin@` (all `@solus.test`).
+- Working style the user asked for: gated phases, short answers without long design recaps, typecheck +
+  browser check + commit per step, stop and wait for "next".
+
+## Phase 4: what exists
+- **4a (DB):**
+  - catalogue/price commands
+  - receipts and adjustments (separation of duties)
+  - transfers with shortage resolution
+  - `place_order` with nearest-warehouse routing (locks candidate stock rows first; split threshold; decision + reason stored)
+  - allocation-based reservation, split decisions, cancellation
+  - batch → pack → dispatch → driver accept (two-party)
+  - `record_delivery`: e-POD photo required in the `epod` bucket; geofence result stored;
+    delivered/refused/damaged/missing per line; cumulative invoicing via `round_div`
+  - confirm/dispute; returns (two-party); a shipment stays `reconciling` while the carrier holds stock
+  - `check_stock_conservation`; scoped order visibility for branch staff and carriers
+  - seed runs a full pull flow per distributor
+  - tests: `supabase/tests/009_pull_flow.test.sql` (39 assertions)
+- **4b (web):**
+  - manufacturer catalogue
+  - distributor Stock (receipts, adjustments) and Fulfilment (batch/pack/dispatch, split decisions, return counts)
+  - retailer Order + My orders (cancel/confirm/dispute)
+  - driver Deliveries (accept/decline, e-POD with photo + GPS, confirm return)
+  - each screen browser-checked on 2026-10-21
+
+## Phase 4: known gaps
+- Push shipments, OTP handover and variance cases are Phase 5a. Missing pieces at delivery leave the
+  shipment `reconciling`, which blocks that carrier's next dispatch until 5a can resolve it.
+- Not verified in the browser: return count → driver confirm (covered by 009 + seed). No UI yet for
+  transfers or price-list publishing (DB commands exist and are tested).
+- The concurrency test still calls `reserve_order` as the owner. A variant through `place_order` as
+  authenticated retailers is still to do.
+- Disputes are recorded but there is no resolution workflow yet (support tickets, Phase 6).
 
 ## Phase 3: what exists
 `npm run test:all` now runs: clean reset → 349 pgTAP assertions → typecheck (root + 4 workspaces) →

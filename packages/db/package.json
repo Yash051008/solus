@@ -1,0 +1,17 @@
+{
+  "name": "@solus/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@solus/core": "*",
+    "@supabase/supabase-js": "2.117.2",
+    "@solus/integrations": "*"
+  }
+}

@@ -20,16 +20,20 @@ if ! supabase status >/dev/null 2>&1; then
   npm run --silent db:start
 fi
 
-echo "== 1/4 reset database: migrations + seed from scratch =="
+echo "== 1/5 reset database: migrations + seed from scratch =="
 supabase db reset
 
-echo "== 2/4 pgTAP: schema/grants, rounding, stock ledger, money ledger, RLS isolation, audit =="
+echo "== 2/5 pgTAP: schema/grants, rounding, ledgers, RLS isolation, audit, Phase 3 commands, geofence =="
 supabase test db
 
-echo "== 3/4 typecheck =="
-npx tsc -p tsconfig.json
+echo "== 3/5 typecheck (root tests + every workspace) =="
+npm run --silent typecheck
 
-echo "== 4/4 node: 50-vs-10 concurrency, commit-time invariants, duplicate posting =="
-node --test "tests/**/*.test.ts"
+echo "== 4/5 node: unit + KYC contract, 50-vs-10 concurrency, commit-time invariants, end-to-end flows via Auth/PostgREST =="
+npm run --silent test:node
+
+echo "== 5/5 web production build =="
+bash scripts/web-env.sh >/dev/null
+NEXT_TELEMETRY_DISABLED=1 npm run --silent web:build
 
 echo "== ALL SUITES PASSED =="

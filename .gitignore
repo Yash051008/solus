@@ -22,3 +22,6 @@ supabase/.temp/
 # Logs
 *.log
 npm-debug.log*
+
+# Next.js
+next-env.d.ts

@@ -1,0 +1,1084 @@
+
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
+export type Database = {
+  
+  "app": {
+          Tables: {
+            [_ in never]: never
+          }
+          Views: {
+            [_ in never]: never
+          }
+          Functions: {
+            "account_normal_side":
+{ Args: { "p_type": Database["public"]['Enums']["account_type"] }; Returns: string
+                           },
+"apply_bps":
+{ Args: { "p_amount_kobo": number,"p_bps": number,"p_mode"?: string }; Returns: number
+                           },
+"can_manage_branch":
+{ Args: { "p_branch_id": string }; Returns: boolean
+                           },
+"check_geofence":
+{ Args: { "p_accuracy_m": number,"p_distributor_id": string,"p_lat": number,"p_lng": number,"p_retailer_org_id": string }; Returns: {
+              "distance_m": number,"max_accuracy_m": number,"ok": boolean,"radius_m": number,"reason": string
+            }[]
+                           },
+"check_journals_balanced":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "book_org_id": string,"entry_count": number,"journal_id": string,"net": number
+            }[]
+                           },
+"check_money_projection":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "account_id": string,"ledger_balance": number,"projected_balance": number
+            }[]
+                           },
+"check_stock_projection":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "ledger_on_hand": number,"ledger_reserved": number,"location_id": string,"projected_on_hand": number,"projected_reserved": number,"sku_id": string
+            }[]
+                           },
+"create_branch":
+{ Args: { "p_name": string,"p_org_id": string }; Returns: string
+                           },
+"create_territory":
+{ Args: { "p_boundary"?: Json,"p_branch_id": string,"p_name": string }; Returns: string
+                           },
+"create_warehouse":
+{ Args: { "p_branch_id": string,"p_lat": number,"p_lng": number,"p_name": string }; Returns: string
+                           },
+"current_user_id":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"decide_customer":
+{ Args: { "p_approve": boolean,"p_reason"?: string,"p_relationship_id": string,"p_territory_id"?: string }; Returns: undefined
+                           },
+"decide_join_request":
+{ Args: { "p_approve": boolean,"p_branch_id"?: string,"p_reason"?: string,"p_request_id": string,"p_territory_id"?: string }; Returns: undefined
+                           },
+"ensure_account":
+{ Args: { "p_account_type": Database["public"]['Enums']["account_type"],"p_book_org_id": string,"p_counterparty_org_id"?: string,"p_counterparty_user_id"?: string,"p_holder_org_id"?: string,"p_provider"?: string }; Returns: string
+                           },
+"evaluate_geofence":
+{ Args: { "p_accuracy_m": number,"p_distributor_id": string,"p_lat": number,"p_lng": number,"p_retailer_org_id": string }; Returns: {
+              "distance_m": number,"max_accuracy_m": number,"ok": boolean,"radius_m": number,"reason": string
+            }[]
+                           },
+"has_role":
+{ Args: { "p_org_id": string,"p_roles": (Database["public"]['Enums']["member_role"])[] }; Returns: boolean
+                           },
+"is_platform_admin":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"kyc_level":
+{ Args: { "p_org_id": string }; Returns: number
+                           },
+"make_point":
+{ Args: { "p_lat": number,"p_lng": number }; Returns: unknown
+                           },
+"my_branch_ids":
+{ Args: { "p_roles": (Database["public"]['Enums']["member_role"])[] }; Returns: (string)[]
+                           },
+"my_org_ids":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"my_org_ids_with_role":
+{ Args: { "p_roles": (Database["public"]['Enums']["member_role"])[] }; Returns: (string)[]
+                           },
+"onboard_organisation":
+{ Args: { "p_admin_user_id": string,"p_kind": Database["public"]['Enums']["org_kind"],"p_name": string,"p_slug": string }; Returns: string
+                           },
+"post_journal":
+{ Args: { "p_entries": Json,"p_idempotency_key": string,"p_journal_type": string,"p_memo"?: string,"p_ref_id"?: string,"p_ref_kind"?: string,"p_reverses_journal_id"?: string }; Returns: string
+                           },
+"post_stock_movement":
+{ Args: { "p_group_id": string,"p_idempotency_key"?: string,"p_location_id": string,"p_qty": number,"p_reason"?: string,"p_ref_id"?: string,"p_ref_kind"?: string,"p_sign"?: number,"p_sku_id": string,"p_type": Database["public"]['Enums']["movement_type"] }; Returns: string
+                           },
+"record_kyc_result":
+{ Args: { "p_id_hash": string,"p_id_type": string,"p_org_id": string,"p_outcome": string,"p_provider": string,"p_provider_ref": string,"p_subject_user_id": string }; Returns: Json
+                           },
+"register_retailer":
+{ Args: { "p_accuracy_m": number,"p_business_name": string,"p_distributor_id": string,"p_full_name": string,"p_lat": number,"p_lng": number,"p_phone_e164": string }; Returns: string
+                           },
+"registration_directory":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "id": string,"name": string
+            }[]
+                           },
+"request_distributor":
+{ Args: { "p_distributor_id": string,"p_retailer_org_id": string }; Returns: string
+                           },
+"request_to_join":
+{ Args: { "p_distributor_id": string,"p_full_name": string,"p_note"?: string,"p_phone_e164": string,"p_role": Database["public"]['Enums']["member_role"] }; Returns: string
+                           },
+"require_branch_manager":
+{ Args: { "p_branch_id": string }; Returns: string
+                           },
+"require_role":
+{ Args: { "p_org_id": string,"p_roles": (Database["public"]['Enums']["member_role"])[] }; Returns: string
+                           },
+"require_user":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"reserve_order":
+{ Args: { "p_order_id": string,"p_warehouse_id": string }; Returns: undefined
+                           },
+"round_div":
+{ Args: { "p_den": number,"p_mode"?: string,"p_num": number }; Returns: number
+                           },
+"set_warehouse_active":
+{ Args: { "p_active": boolean,"p_warehouse_id": string }; Returns: undefined
+                           },
+"suggest_territory":
+{ Args: { "p_distributor_id": string,"p_point": unknown }; Returns: string
+                           },
+"update_distributor_settings":
+{ Args: { "p_geofence_max_accuracy_m": number,"p_geofence_radius_m": number,"p_org_id": string,"p_split_threshold_m": number }; Returns: undefined
+                           },
+"upsert_my_profile":
+{ Args: { "p_full_name": string,"p_phone_e164": string }; Returns: undefined
+                           },
+"visible_account_ids":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"visible_distributor_ids":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"visible_location_ids":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"visible_manufacturer_ids":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"visible_retailer_ids":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"visible_user_ids":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           }
+          }
+          Enums: {
+            [_ in never]: never
+          }
+          CompositeTypes: {
+            [_ in never]: never
+          }
+        },"public": {
+          Tables: {
+            "account_balances": {
+                  Row: {
+                    "account_id": string,"account_type": Database["public"]['Enums']["account_type"],"balance_kobo": number,"book_org_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"account_type": Database["public"]['Enums']["account_type"],"balance_kobo"?: number,"book_org_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "account_id"?: string,"account_type"?: Database["public"]['Enums']["account_type"],"balance_kobo"?: number,"book_org_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "account_balances_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: true
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"accounts": {
+                  Row: {
+                    "account_type": Database["public"]['Enums']["account_type"],"book_kind": Database["public"]['Enums']["org_kind"],"book_org_id": string,"counterparty_org_id": string | null,"counterparty_user_id": string | null,"created_at": string,"holder_org_id": string | null,"id": string,"provider": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_type": Database["public"]['Enums']["account_type"],"book_kind": Database["public"]['Enums']["org_kind"],"book_org_id": string,"counterparty_org_id"?: string | null,"counterparty_user_id"?: string | null,"created_at"?: string,"holder_org_id"?: string | null,"id"?: string,"provider"?: string | null
+                  }
+                  Update: {
+                    "account_type"?: Database["public"]['Enums']["account_type"],"book_kind"?: Database["public"]['Enums']["org_kind"],"book_org_id"?: string,"counterparty_org_id"?: string | null,"counterparty_user_id"?: string | null,"created_at"?: string,"holder_org_id"?: string | null,"id"?: string,"provider"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "accounts_book_org_id_book_kind_fkey"
+      columns: ["book_org_id","book_kind"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "accounts_book_org_id_book_kind_fkey"
+      columns: ["book_org_id","book_kind"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "accounts_counterparty_org_id_fkey"
+      columns: ["counterparty_org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "accounts_counterparty_org_id_fkey"
+      columns: ["counterparty_org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "accounts_counterparty_user_id_fkey"
+      columns: ["counterparty_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "accounts_holder_org_id_fkey"
+      columns: ["holder_org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "accounts_holder_org_id_fkey"
+      columns: ["holder_org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"branches": {
+                  Row: {
+                    "created_at": string,"id": string,"name": string,"org_id": string,"org_kind": Database["public"]['Enums']["org_kind"]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"name": string,"org_id": string,"org_kind"?: Database["public"]['Enums']["org_kind"]
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"name"?: string,"org_id"?: string,"org_kind"?: Database["public"]['Enums']["org_kind"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "branches_org_id_org_kind_fkey"
+      columns: ["org_id","org_kind"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "branches_org_id_org_kind_fkey"
+      columns: ["org_id","org_kind"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id","kind"]
+    }
+                  ]
+                },"brands": {
+                  Row: {
+                    "created_at": string,"id": string,"manufacturer_kind": Database["public"]['Enums']["org_kind"],"manufacturer_org_id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"manufacturer_kind"?: Database["public"]['Enums']["org_kind"],"manufacturer_org_id": string,"name": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"manufacturer_kind"?: Database["public"]['Enums']["org_kind"],"manufacturer_org_id"?: string,"name"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "brands_manufacturer_org_id_manufacturer_kind_fkey"
+      columns: ["manufacturer_org_id","manufacturer_kind"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "brands_manufacturer_org_id_manufacturer_kind_fkey"
+      columns: ["manufacturer_org_id","manufacturer_kind"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id","kind"]
+    }
+                  ]
+                },"customer_relationships": {
+                  Row: {
+                    "created_at": string,"credit_limit_kobo": number,"decided_at": string | null,"decided_by": string | null,"decision_reason": string | null,"distributor_kind": Database["public"]['Enums']["org_kind"],"distributor_org_id": string,"id": string,"retailer_kind": Database["public"]['Enums']["org_kind"],"retailer_org_id": string,"status": Database["public"]['Enums']["record_status"],"territory_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"credit_limit_kobo"?: number,"decided_at"?: string | null,"decided_by"?: string | null,"decision_reason"?: string | null,"distributor_kind"?: Database["public"]['Enums']["org_kind"],"distributor_org_id": string,"id"?: string,"retailer_kind"?: Database["public"]['Enums']["org_kind"],"retailer_org_id": string,"status"?: Database["public"]['Enums']["record_status"],"territory_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"credit_limit_kobo"?: number,"decided_at"?: string | null,"decided_by"?: string | null,"decision_reason"?: string | null,"distributor_kind"?: Database["public"]['Enums']["org_kind"],"distributor_org_id"?: string,"id"?: string,"retailer_kind"?: Database["public"]['Enums']["org_kind"],"retailer_org_id"?: string,"status"?: Database["public"]['Enums']["record_status"],"territory_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "customer_relationships_decided_by_fkey"
+      columns: ["decided_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "customer_relationships_distributor_org_id_distributor_kind_fkey"
+      columns: ["distributor_org_id","distributor_kind"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "customer_relationships_distributor_org_id_distributor_kind_fkey"
+      columns: ["distributor_org_id","distributor_kind"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "customer_relationships_retailer_org_id_retailer_kind_fkey"
+      columns: ["retailer_org_id","retailer_kind"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "customer_relationships_retailer_org_id_retailer_kind_fkey"
+      columns: ["retailer_org_id","retailer_kind"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "customer_relationships_territory_id_distributor_org_id_fkey"
+      columns: ["territory_id","distributor_org_id"]
+isOneToOne: false
+      referencedRelation: "territories"
+      referencedColumns: ["id","org_id"]
+    },{
+      foreignKeyName: "customer_relationships_territory_id_distributor_org_id_fkey"
+      columns: ["territory_id","distributor_org_id"]
+isOneToOne: false
+      referencedRelation: "v_territories"
+      referencedColumns: ["id","org_id"]
+    }
+                  ]
+                },"join_requests": {
+                  Row: {
+                    "created_at": string,"decided_at": string | null,"decided_by": string | null,"decision_reason": string | null,"id": string,"note": string | null,"org_id": string,"org_kind": Database["public"]['Enums']["org_kind"],"requested_role": Database["public"]['Enums']["member_role"],"status": Database["public"]['Enums']["record_status"],"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"decision_reason"?: string | null,"id"?: string,"note"?: string | null,"org_id": string,"org_kind"?: Database["public"]['Enums']["org_kind"],"requested_role": Database["public"]['Enums']["member_role"],"status"?: Database["public"]['Enums']["record_status"],"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"decision_reason"?: string | null,"id"?: string,"note"?: string | null,"org_id"?: string,"org_kind"?: Database["public"]['Enums']["org_kind"],"requested_role"?: Database["public"]['Enums']["member_role"],"status"?: Database["public"]['Enums']["record_status"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "join_requests_decided_by_fkey"
+      columns: ["decided_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "join_requests_org_id_org_kind_fkey"
+      columns: ["org_id","org_kind"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "join_requests_org_id_org_kind_fkey"
+      columns: ["org_id","org_kind"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "join_requests_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"journals": {
+                  Row: {
+                    "id": string,"idempotency_key": string,"journal_type": string,"memo": string | null,"posted_at": string,"posted_by": string | null,"ref_id": string | null,"ref_kind": string | null,"request_hash": string,"reverses_journal_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"idempotency_key": string,"journal_type": string,"memo"?: string | null,"posted_at"?: string,"posted_by"?: string | null,"ref_id"?: string | null,"ref_kind"?: string | null,"request_hash": string,"reverses_journal_id"?: string | null
+                  }
+                  Update: {
+                    "id"?: string,"idempotency_key"?: string,"journal_type"?: string,"memo"?: string | null,"posted_at"?: string,"posted_by"?: string | null,"ref_id"?: string | null,"ref_kind"?: string | null,"request_hash"?: string,"reverses_journal_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "journals_reverses_journal_id_fkey"
+      columns: ["reverses_journal_id"]
+isOneToOne: false
+      referencedRelation: "journals"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"kyc_checks": {
+                  Row: {
+                    "checked_at": string,"id": string,"id_hash": string,"id_type": string,"org_id": string,"outcome": string,"provider": string,"provider_ref": string,"seq": number,"subject_user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checked_at"?: string,"id"?: string,"id_hash": string,"id_type": string,"org_id": string,"outcome": string,"provider": string,"provider_ref": string,"seq"?: never,"subject_user_id": string
+                  }
+                  Update: {
+                    "checked_at"?: string,"id"?: string,"id_hash"?: string,"id_type"?: string,"org_id"?: string,"outcome"?: string,"provider"?: string,"provider_ref"?: string,"seq"?: never,"subject_user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "kyc_checks_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "kyc_checks_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "kyc_checks_subject_user_id_fkey"
+      columns: ["subject_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"ledger_entries": {
+                  Row: {
+                    "account_id": string,"amount_kobo": number,"book_org_id": string,"created_at": string,"id": string,"journal_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"amount_kobo": number,"book_org_id": string,"created_at"?: string,"id"?: string,"journal_id": string
+                  }
+                  Update: {
+                    "account_id"?: string,"amount_kobo"?: number,"book_org_id"?: string,"created_at"?: string,"id"?: string,"journal_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "ledger_entries_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "ledger_entries_journal_id_fkey"
+      columns: ["journal_id"]
+isOneToOne: false
+      referencedRelation: "journals"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"memberships": {
+                  Row: {
+                    "branch_id": string | null,"created_at": string,"id": string,"org_id": string,"org_kind": Database["public"]['Enums']["org_kind"],"role": Database["public"]['Enums']["member_role"],"status": Database["public"]['Enums']["record_status"],"territory_id": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "branch_id"?: string | null,"created_at"?: string,"id"?: string,"org_id": string,"org_kind": Database["public"]['Enums']["org_kind"],"role": Database["public"]['Enums']["member_role"],"status"?: Database["public"]['Enums']["record_status"],"territory_id"?: string | null,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "branch_id"?: string | null,"created_at"?: string,"id"?: string,"org_id"?: string,"org_kind"?: Database["public"]['Enums']["org_kind"],"role"?: Database["public"]['Enums']["member_role"],"status"?: Database["public"]['Enums']["record_status"],"territory_id"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "memberships_branch_id_org_id_fkey"
+      columns: ["branch_id","org_id"]
+isOneToOne: false
+      referencedRelation: "branches"
+      referencedColumns: ["id","org_id"]
+    },{
+      foreignKeyName: "memberships_org_id_org_kind_fkey"
+      columns: ["org_id","org_kind"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "memberships_org_id_org_kind_fkey"
+      columns: ["org_id","org_kind"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "memberships_territory_id_branch_id_fkey"
+      columns: ["territory_id","branch_id"]
+isOneToOne: false
+      referencedRelation: "territories"
+      referencedColumns: ["id","branch_id"]
+    },{
+      foreignKeyName: "memberships_territory_id_branch_id_fkey"
+      columns: ["territory_id","branch_id"]
+isOneToOne: false
+      referencedRelation: "v_territories"
+      referencedColumns: ["id","branch_id"]
+    },{
+      foreignKeyName: "memberships_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"order_lines": {
+                  Row: {
+                    "created_at": string,"id": string,"line_amount_kobo": number | null,"order_id": string,"qty_pieces": number,"sku_id": string,"uom_code": string,"uom_price_kobo": number,"uom_qty": number,"warehouse_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"line_amount_kobo"?: never,"order_id": string,"qty_pieces": number,"sku_id": string,"uom_code": string,"uom_price_kobo": number,"uom_qty": number,"warehouse_id"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"line_amount_kobo"?: never,"order_id"?: string,"qty_pieces"?: number,"sku_id"?: string,"uom_code"?: string,"uom_price_kobo"?: number,"uom_qty"?: number,"warehouse_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "order_lines_order_id_fkey"
+      columns: ["order_id"]
+isOneToOne: false
+      referencedRelation: "orders"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_lines_sku_id_uom_code_fkey"
+      columns: ["sku_id","uom_code"]
+isOneToOne: false
+      referencedRelation: "sku_uom"
+      referencedColumns: ["sku_id","uom_code"]
+    },{
+      foreignKeyName: "order_lines_warehouse_id_fkey"
+      columns: ["warehouse_id"]
+isOneToOne: false
+      referencedRelation: "v_warehouses"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_lines_warehouse_id_fkey"
+      columns: ["warehouse_id"]
+isOneToOne: false
+      referencedRelation: "warehouses"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"orders": {
+                  Row: {
+                    "created_at": string,"distributor_org_id": string,"id": string,"idempotency_key": string | null,"order_kind": Database["public"]['Enums']["order_kind"],"placed_by_user_id": string | null,"retailer_org_id": string,"routing_decision": Json | null,"routing_reason": string | null,"status": Database["public"]['Enums']["order_status"],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"distributor_org_id": string,"id"?: string,"idempotency_key"?: string | null,"order_kind"?: Database["public"]['Enums']["order_kind"],"placed_by_user_id"?: string | null,"retailer_org_id": string,"routing_decision"?: Json | null,"routing_reason"?: string | null,"status"?: Database["public"]['Enums']["order_status"],"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"distributor_org_id"?: string,"id"?: string,"idempotency_key"?: string | null,"order_kind"?: Database["public"]['Enums']["order_kind"],"placed_by_user_id"?: string | null,"retailer_org_id"?: string,"routing_decision"?: Json | null,"routing_reason"?: string | null,"status"?: Database["public"]['Enums']["order_status"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "orders_distributor_org_id_retailer_org_id_fkey"
+      columns: ["distributor_org_id","retailer_org_id"]
+isOneToOne: false
+      referencedRelation: "customer_relationships"
+      referencedColumns: ["distributor_org_id","retailer_org_id"]
+    },{
+      foreignKeyName: "orders_placed_by_user_id_fkey"
+      columns: ["placed_by_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"organisations": {
+                  Row: {
+                    "created_at": string,"geofence_max_accuracy_m": number | null,"geofence_radius_m": number | null,"id": string,"kind": Database["public"]['Enums']["org_kind"],"location": unknown,"location_accuracy_m": number | null,"name": string,"slug": string,"split_threshold_m": number | null,"status": Database["public"]['Enums']["record_status"],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"geofence_max_accuracy_m"?: number | null,"geofence_radius_m"?: number | null,"id"?: string,"kind": Database["public"]['Enums']["org_kind"],"location"?: unknown,"location_accuracy_m"?: number | null,"name": string,"slug": string,"split_threshold_m"?: number | null,"status"?: Database["public"]['Enums']["record_status"],"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"geofence_max_accuracy_m"?: number | null,"geofence_radius_m"?: number | null,"id"?: string,"kind"?: Database["public"]['Enums']["org_kind"],"location"?: unknown,"location_accuracy_m"?: number | null,"name"?: string,"slug"?: string,"split_threshold_m"?: number | null,"status"?: Database["public"]['Enums']["record_status"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"price_list_items": {
+                  Row: {
+                    "price_kobo": number,"price_list_id": string,"sku_id": string,"uom_code": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "price_kobo": number,"price_list_id": string,"sku_id": string,"uom_code": string
+                  }
+                  Update: {
+                    "price_kobo"?: number,"price_list_id"?: string,"sku_id"?: string,"uom_code"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "price_list_items_price_list_id_fkey"
+      columns: ["price_list_id"]
+isOneToOne: false
+      referencedRelation: "price_lists"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "price_list_items_sku_id_uom_code_fkey"
+      columns: ["sku_id","uom_code"]
+isOneToOne: false
+      referencedRelation: "sku_uom"
+      referencedColumns: ["sku_id","uom_code"]
+    }
+                  ]
+                },"price_lists": {
+                  Row: {
+                    "created_at": string,"distributor_kind": Database["public"]['Enums']["org_kind"],"distributor_org_id": string,"effective_from": string,"id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"distributor_kind"?: Database["public"]['Enums']["org_kind"],"distributor_org_id": string,"effective_from": string,"id"?: string,"name": string
+                  }
+                  Update: {
+                    "created_at"?: string,"distributor_kind"?: Database["public"]['Enums']["org_kind"],"distributor_org_id"?: string,"effective_from"?: string,"id"?: string,"name"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "price_lists_distributor_org_id_distributor_kind_fkey"
+      columns: ["distributor_org_id","distributor_kind"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "price_lists_distributor_org_id_distributor_kind_fkey"
+      columns: ["distributor_org_id","distributor_kind"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id","kind"]
+    }
+                  ]
+                },"profiles": {
+                  Row: {
+                    "created_at": string,"full_name": string,"phone_e164": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"full_name": string,"phone_e164"?: string | null,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"full_name"?: string,"phone_e164"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"sku_uom": {
+                  Row: {
+                    "pieces_per_uom": number,"sku_id": string,"uom_code": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "pieces_per_uom": number,"sku_id": string,"uom_code": string
+                  }
+                  Update: {
+                    "pieces_per_uom"?: number,"sku_id"?: string,"uom_code"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "sku_uom_sku_id_fkey"
+      columns: ["sku_id"]
+isOneToOne: false
+      referencedRelation: "skus"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"skus": {
+                  Row: {
+                    "active": boolean,"brand_id": string,"code": string,"created_at": string,"id": string,"item_class": string,"manufacturer_org_id": string,"name": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"brand_id": string,"code": string,"created_at"?: string,"id"?: string,"item_class"?: string,"manufacturer_org_id": string,"name": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "active"?: boolean,"brand_id"?: string,"code"?: string,"created_at"?: string,"id"?: string,"item_class"?: string,"manufacturer_org_id"?: string,"name"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "skus_brand_id_manufacturer_org_id_fkey"
+      columns: ["brand_id","manufacturer_org_id"]
+isOneToOne: false
+      referencedRelation: "brands"
+      referencedColumns: ["id","manufacturer_org_id"]
+    }
+                  ]
+                },"stock_balances": {
+                  Row: {
+                    "available": number | null,"location_id": string,"location_kind": Database["public"]['Enums']["location_kind"],"on_hand": number,"org_id": string,"reserved": number,"sku_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "available"?: never,"location_id": string,"location_kind": Database["public"]['Enums']["location_kind"],"on_hand"?: number,"org_id": string,"reserved"?: number,"sku_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "available"?: never,"location_id"?: string,"location_kind"?: Database["public"]['Enums']["location_kind"],"on_hand"?: number,"org_id"?: string,"reserved"?: number,"sku_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_balances_location_id_org_id_fkey"
+      columns: ["location_id","org_id"]
+isOneToOne: false
+      referencedRelation: "stock_locations"
+      referencedColumns: ["id","org_id"]
+    },{
+      foreignKeyName: "stock_balances_sku_id_fkey"
+      columns: ["sku_id"]
+isOneToOne: false
+      referencedRelation: "skus"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"stock_locations": {
+                  Row: {
+                    "created_at": string,"id": string,"kind": Database["public"]['Enums']["location_kind"],"org_id": string,"org_kind": Database["public"]['Enums']["org_kind"],"user_id": string | null,"warehouse_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"kind": Database["public"]['Enums']["location_kind"],"org_id": string,"org_kind"?: Database["public"]['Enums']["org_kind"],"user_id"?: string | null,"warehouse_id"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["location_kind"],"org_id"?: string,"org_kind"?: Database["public"]['Enums']["org_kind"],"user_id"?: string | null,"warehouse_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_locations_org_id_org_kind_fkey"
+      columns: ["org_id","org_kind"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "stock_locations_org_id_org_kind_fkey"
+      columns: ["org_id","org_kind"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "stock_locations_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "stock_locations_warehouse_id_org_id_fkey"
+      columns: ["warehouse_id","org_id"]
+isOneToOne: false
+      referencedRelation: "v_warehouses"
+      referencedColumns: ["id","org_id"]
+    },{
+      foreignKeyName: "stock_locations_warehouse_id_org_id_fkey"
+      columns: ["warehouse_id","org_id"]
+isOneToOne: false
+      referencedRelation: "warehouses"
+      referencedColumns: ["id","org_id"]
+    }
+                  ]
+                },"stock_movements": {
+                  Row: {
+                    "actor_user_id": string | null,"batch_id": string | null,"expiry_date": string | null,"id": string,"idempotency_key": string | null,"location_id": string,"movement_group_id": string,"movement_type": Database["public"]['Enums']["movement_type"],"occurred_at": string,"on_hand_delta": number,"org_id": string,"qty": number,"reason": string | null,"recorded_at": string,"ref_id": string | null,"ref_kind": string | null,"reserved_delta": number,"sku_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "actor_user_id"?: string | null,"batch_id"?: string | null,"expiry_date"?: string | null,"id"?: string,"idempotency_key"?: string | null,"location_id": string,"movement_group_id": string,"movement_type": Database["public"]['Enums']["movement_type"],"occurred_at"?: string,"on_hand_delta": number,"org_id": string,"qty": number,"reason"?: string | null,"recorded_at"?: string,"ref_id"?: string | null,"ref_kind"?: string | null,"reserved_delta": number,"sku_id": string
+                  }
+                  Update: {
+                    "actor_user_id"?: string | null,"batch_id"?: string | null,"expiry_date"?: string | null,"id"?: string,"idempotency_key"?: string | null,"location_id"?: string,"movement_group_id"?: string,"movement_type"?: Database["public"]['Enums']["movement_type"],"occurred_at"?: string,"on_hand_delta"?: number,"org_id"?: string,"qty"?: number,"reason"?: string | null,"recorded_at"?: string,"ref_id"?: string | null,"ref_kind"?: string | null,"reserved_delta"?: number,"sku_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "stock_movements_location_id_org_id_fkey"
+      columns: ["location_id","org_id"]
+isOneToOne: false
+      referencedRelation: "stock_locations"
+      referencedColumns: ["id","org_id"]
+    },{
+      foreignKeyName: "stock_movements_sku_id_fkey"
+      columns: ["sku_id"]
+isOneToOne: false
+      referencedRelation: "skus"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"supply_relationships": {
+                  Row: {
+                    "created_at": string,"distributor_kind": Database["public"]['Enums']["org_kind"],"distributor_org_id": string,"manufacturer_kind": Database["public"]['Enums']["org_kind"],"manufacturer_org_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"distributor_kind"?: Database["public"]['Enums']["org_kind"],"distributor_org_id": string,"manufacturer_kind"?: Database["public"]['Enums']["org_kind"],"manufacturer_org_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"distributor_kind"?: Database["public"]['Enums']["org_kind"],"distributor_org_id"?: string,"manufacturer_kind"?: Database["public"]['Enums']["org_kind"],"manufacturer_org_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "supply_relationships_distributor_org_id_distributor_kind_fkey"
+      columns: ["distributor_org_id","distributor_kind"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "supply_relationships_distributor_org_id_distributor_kind_fkey"
+      columns: ["distributor_org_id","distributor_kind"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "supply_relationships_manufacturer_org_id_manufacturer_kind_fkey"
+      columns: ["manufacturer_org_id","manufacturer_kind"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id","kind"]
+    },{
+      foreignKeyName: "supply_relationships_manufacturer_org_id_manufacturer_kind_fkey"
+      columns: ["manufacturer_org_id","manufacturer_kind"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id","kind"]
+    }
+                  ]
+                },"territories": {
+                  Row: {
+                    "boundary": unknown,"branch_id": string,"created_at": string,"id": string,"name": string,"org_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "boundary"?: unknown,"branch_id": string,"created_at"?: string,"id"?: string,"name": string,"org_id": string
+                  }
+                  Update: {
+                    "boundary"?: unknown,"branch_id"?: string,"created_at"?: string,"id"?: string,"name"?: string,"org_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "territories_branch_id_org_id_fkey"
+      columns: ["branch_id","org_id"]
+isOneToOne: false
+      referencedRelation: "branches"
+      referencedColumns: ["id","org_id"]
+    }
+                  ]
+                },"warehouses": {
+                  Row: {
+                    "active": boolean,"branch_id": string,"created_at": string,"id": string,"location": unknown,"name": string,"org_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"branch_id": string,"created_at"?: string,"id"?: string,"location": unknown,"name": string,"org_id": string
+                  }
+                  Update: {
+                    "active"?: boolean,"branch_id"?: string,"created_at"?: string,"id"?: string,"location"?: unknown,"name"?: string,"org_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "warehouses_branch_id_org_id_fkey"
+      columns: ["branch_id","org_id"]
+isOneToOne: false
+      referencedRelation: "branches"
+      referencedColumns: ["id","org_id"]
+    }
+                  ]
+                }
+          }
+          Views: {
+            "v_account_balances": {
+                  Row: {
+                    "account_id": string | null,"account_type": Database["public"]['Enums']["account_type"] | null,"balance_kobo": number | null,"book_org_id": string | null,"normal_side": string | null,"updated_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "account_id"?: string | null,"account_type"?: Database["public"]['Enums']["account_type"] | null,"balance_kobo"?: never,"book_org_id"?: string | null,"normal_side"?: never,"updated_at"?: string | null
+                         }
+                        Update: {
+                           "account_id"?: string | null,"account_type"?: Database["public"]['Enums']["account_type"] | null,"balance_kobo"?: never,"book_org_id"?: string | null,"normal_side"?: never,"updated_at"?: string | null
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "account_balances_account_id_fkey"
+      columns: ["account_id"]
+isOneToOne: true
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"v_organisations": {
+                  Row: {
+                    "geofence_max_accuracy_m": number | null,"geofence_radius_m": number | null,"id": string | null,"kind": Database["public"]['Enums']["org_kind"] | null,"lat": number | null,"lng": number | null,"location_accuracy_m": number | null,"name": string | null,"slug": string | null,"split_threshold_m": number | null,"status": Database["public"]['Enums']["record_status"] | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "geofence_max_accuracy_m"?: number | null,"geofence_radius_m"?: number | null,"id"?: string | null,"kind"?: Database["public"]['Enums']["org_kind"] | null,"lat"?: never,"lng"?: never,"location_accuracy_m"?: number | null,"name"?: string | null,"slug"?: string | null,"split_threshold_m"?: number | null,"status"?: Database["public"]['Enums']["record_status"] | null
+                         }
+                        Update: {
+                           "geofence_max_accuracy_m"?: number | null,"geofence_radius_m"?: number | null,"id"?: string | null,"kind"?: Database["public"]['Enums']["org_kind"] | null,"lat"?: never,"lng"?: never,"location_accuracy_m"?: number | null,"name"?: string | null,"slug"?: string | null,"split_threshold_m"?: number | null,"status"?: Database["public"]['Enums']["record_status"] | null
+                         }
+                        Relationships: [
+                    
+                  ]
+                },"v_territories": {
+                  Row: {
+                    "branch_id": string | null,"has_boundary": boolean | null,"id": string | null,"name": string | null,"org_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "branch_id"?: string | null,"has_boundary"?: never,"id"?: string | null,"name"?: string | null,"org_id"?: string | null
+                         }
+                        Update: {
+                           "branch_id"?: string | null,"has_boundary"?: never,"id"?: string | null,"name"?: string | null,"org_id"?: string | null
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "territories_branch_id_org_id_fkey"
+      columns: ["branch_id","org_id"]
+isOneToOne: false
+      referencedRelation: "branches"
+      referencedColumns: ["id","org_id"]
+    }
+                  ]
+                },"v_warehouses": {
+                  Row: {
+                    "active": boolean | null,"branch_id": string | null,"id": string | null,"lat": number | null,"lng": number | null,"name": string | null,"org_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "active"?: boolean | null,"branch_id"?: string | null,"id"?: string | null,"lat"?: never,"lng"?: never,"name"?: string | null,"org_id"?: string | null
+                         }
+                        Update: {
+                           "active"?: boolean | null,"branch_id"?: string | null,"id"?: string | null,"lat"?: never,"lng"?: never,"name"?: string | null,"org_id"?: string | null
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "warehouses_branch_id_org_id_fkey"
+      columns: ["branch_id","org_id"]
+isOneToOne: false
+      referencedRelation: "branches"
+      referencedColumns: ["id","org_id"]
+    }
+                  ]
+                }
+          }
+          Functions: {
+            [_ in never]: never
+          }
+          Enums: {
+            "account_type": "provider_clearing"|"wallet"|"partner_funds"|"receivables"|"trade_credit"|"cash_in_transit"|"variance"|"variance_offset"|"sales_revenue","location_kind": "warehouse"|"agent"|"driver","member_role": "platform_admin"|"manufacturer_admin"|"distributor_admin"|"branch_manager"|"warehouse_staff"|"driver"|"agent"|"retailer","movement_type": "receipt"|"reserve"|"release"|"transfer_out"|"transfer_in"|"handover"|"sale"|"return"|"damage"|"adjustment","order_kind": "pull"|"primary","order_status": "placed"|"awaiting_split_decision"|"reserved"|"rejected"|"batched"|"packed"|"dispatched"|"delivered"|"partially_delivered"|"failed_delivery"|"settled"|"cancelled","org_kind": "platform"|"manufacturer"|"distributor"|"retailer","record_status": "pending"|"active"|"suspended"|"rejected"
+          }
+          CompositeTypes: {
+            [_ in never]: never
+          }
+        }
+}
+
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
+
+export const Constants = {
+  "app": {
+          Enums: {
+            
+          }
+        },"public": {
+          Enums: {
+            "account_type": ["provider_clearing", "wallet", "partner_funds", "receivables", "trade_credit", "cash_in_transit", "variance", "variance_offset", "sales_revenue"],"location_kind": ["warehouse", "agent", "driver"],"member_role": ["platform_admin", "manufacturer_admin", "distributor_admin", "branch_manager", "warehouse_staff", "driver", "agent", "retailer"],"movement_type": ["receipt", "reserve", "release", "transfer_out", "transfer_in", "handover", "sale", "return", "damage", "adjustment"],"order_kind": ["pull", "primary"],"order_status": ["placed", "awaiting_split_decision", "reserved", "rejected", "batched", "packed", "dispatched", "delivered", "partially_delivered", "failed_delivery", "settled", "cancelled"],"org_kind": ["platform", "manufacturer", "distributor", "retailer"],"record_status": ["pending", "active", "suspended", "rejected"]
+          }
+        }
+} as const

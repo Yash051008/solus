@@ -2,7 +2,7 @@
 -- by clients, auth.uid() only behind the seam, audit attached to every business table.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(11);
 
 select is(
   (select array_agg(tablename::text order by tablename) from pg_tables
@@ -46,17 +46,24 @@ select is(
   'service_role cannot write ledgers or projections directly'
 );
 
+-- Explicit allowlist: adding a client-callable function requires adding it here, on purpose.
 select is(
-  (select array_agg(p.oid::regprocedure::text order by 1)
+  (select array_agg(p.proname::text order by 1)
    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname in ('app', 'audit', 'private', 'public')
      and has_function_privilege('authenticated', p.oid, 'execute')
      and p.proname not in (
+       -- RLS helpers
        'current_user_id', 'is_platform_admin', 'my_org_ids', 'my_org_ids_with_role', 'my_branch_ids',
        'visible_location_ids', 'visible_retailer_ids', 'visible_distributor_ids', 'visible_manufacturer_ids',
-       'visible_user_ids', 'visible_account_ids', 'account_normal_side')),
+       'visible_user_ids', 'visible_account_ids', 'account_normal_side',
+       -- Phase 3 commands (each authorises internally)
+       'onboard_organisation', 'update_distributor_settings', 'create_branch', 'create_territory',
+       'create_warehouse', 'set_warehouse_active', 'upsert_my_profile', 'registration_directory',
+       'register_retailer', 'request_distributor', 'decide_customer', 'request_to_join',
+       'decide_join_request', 'kyc_level', 'check_geofence')),
   null,
-  'authenticated can execute only the RLS helper functions (no ledger primitives)'
+  'authenticated can execute only allow-listed functions (no ledger primitives, no adapter-only functions)'
 );
 
 select is(
@@ -88,6 +95,11 @@ select is(
   null,
   'every business table (all but the two projections) has the audit trigger'
 );
+
+select ok(not has_function_privilege('authenticated', 'app.record_kyc_result(uuid,uuid,text,text,text,text,text)', 'execute'),
+          'clients cannot record their own KYC result');
+select ok(has_function_privilege('service_role', 'app.record_kyc_result(uuid,uuid,text,text,text,text,text)', 'execute'),
+          'the server-side KYC adapter (service_role) can record results');
 
 select * from finish();
 rollback;

@@ -6,13 +6,13 @@
 | [0002](0002-regulatory-findings-2026-10.md) | Regulatory findings (verification status, Oct 2026) | Accepted (living) | 2026-10-21 |
 | [0003](0003-ledger-design.md) | Inventory and money ledger design | Accepted | 2026-10-21 |
 | [0004](0004-auth-abstraction-and-portability.md) | Auth abstraction and portability seams | Accepted | 2026-10-21 |
+| [0005](0005-kyc-provider.md) | KYC provider and the KycProvider interface | Accepted (mock built, real adapter unverified) | 2026-10-21 |
 
 ## Planned (written in the phase that builds each interface, after reading current provider docs)
 | ADR | Topic | Phase |
 |---|---|---|
-| 0005 | KYC provider (Dojah / Smile ID / Youverify: BVN + NIN) and three-tier KYC re-verification | 3 |
-| 0006 | SMS / OTP delivery provider | 3 |
-| 0007 | Maps / geocoding provider + PostGIS usage | 3–4 |
+| 0006 | SMS / OTP delivery provider (also phone verification) | 5a |
+| 0007 | Maps / geocoding provider (only if routing UI needs it; distances are PostGIS) | 4 |
 | 0008 | Payments / virtual accounts provider (Paystack DVA / Monnify reserved accounts / Flutterwave VA) | 5b |
 | 0009 | Expo offline storage + outbox pattern | 5b |
 

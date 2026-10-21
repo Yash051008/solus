@@ -3,7 +3,7 @@
 -- distributor B (abuja-central), in EVERY table. Plus positive scoping checks per role.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(163);
+select plan(175);
 
 create function pg_temp.login(p_handle text) returns void language plpgsql as $$
 begin
@@ -27,6 +27,14 @@ where r.slug = 'retailer-01';
 insert into public.order_lines (order_id, sku_id, uom_code, uom_qty, uom_price_kobo)
 select '44444444-4444-4444-8444-444444444444', id, 'piece', 5, 25000 from public.skus where code = 'NDL-CHK-70G';
 
+-- Fixture: a pending join request to B, and a KYC check for a B retailer.
+insert into public.join_requests (user_id, org_id, requested_role)
+select u.id, o.id, 'driver' from auth.users u, public.organisations o
+where u.email = 'ac.agent1@solus.test' and o.slug = 'abuja-central';
+insert into public.kyc_checks (org_id, subject_user_id, id_type, outcome, provider, provider_ref, id_hash)
+select m.org_id, m.user_id, 'BVN', 'exact_match', 'mock', 'fixture-ref-13', repeat('a', 64)
+from public.memberships m join public.organisations o on o.id = m.org_id where o.slug = 'retailer-13';
+
 -- How to key a row of each table, and which rows belong to distributor B (computed as owner).
 create temp table table_keys (tbl text primary key, key_expr text not null);
 insert into table_keys values
@@ -41,7 +49,8 @@ insert into table_keys values
   ('stock_balances', 'x.location_id::text || '':'' || x.sku_id::text'),
   ('orders', 'x.id::text'), ('order_lines', 'x.id::text'),
   ('accounts', 'x.id::text'), ('journals', 'x.id::text'), ('ledger_entries', 'x.id::text'),
-  ('account_balances', 'x.account_id::text');
+  ('account_balances', 'x.account_id::text'),
+  ('join_requests', 'x.id::text'), ('kyc_checks', 'x.id::text');
 
 select is(
   (select array_agg(tablename::text order by 1) from pg_tables
@@ -79,7 +88,9 @@ union all select 'accounts', id::text from b_accounts
 union all select 'journals', distinct_j.journal_id::text
           from (select distinct journal_id from public.ledger_entries where account_id in (select id from b_accounts)) distinct_j
 union all select 'ledger_entries', id::text from public.ledger_entries where account_id in (select id from b_accounts)
-union all select 'account_balances', account_id::text from public.account_balances where account_id in (select id from b_accounts);
+union all select 'account_balances', account_id::text from public.account_balances where account_id in (select id from b_accounts)
+union all select 'join_requests', id::text from public.join_requests where org_id = (select id from b)
+union all select 'kyc_checks', id::text from public.kyc_checks where org_id in (select id from b_orgs);
 
 select is(
   (select array_agg(k.tbl order by 1) from table_keys k

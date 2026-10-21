@@ -71,9 +71,14 @@
   statements on request. We do **not** run our own AML scoring.
 
 ### F6. CBN three-tier KYC: **Unconfirmed for 2026**
-- Long-standing regime, but current tier limits were **not** re-verified in Phase 1. Re-verify in Phase 3
-  alongside KYC provider research (ADR-0005). Until then, no tier limits are hard-coded. They'll be
-  configuration sourced from the partner.
+- Long-standing regime, but current tier limits are **still unverified** after the Phase 3 search
+  (2026-10-21). Vendor sources disagree: youverify.co pages give Tier 1 as ₦30,000 daily / ₦300,000 balance
+  in one place and ₦50,000 / ₦300,000 in another, and Tier 2 as ₦200,000 or ₦500,000 daily. An older
+  businessday.ng report gives different figures again. The CBN circular wasn't found. **Decision:** no tier
+  limits in code. ADR-0005 defines a coarse `kyc_level` (0/1/2) that business rules reference through
+  configuration.
+  Sources (search summaries only): https://youverify.co/blog/cbn-kyc-aml-requirements-2026,
+  https://youverify.co/blog/3-tiered-know-your-client-kyc-requirements, https://businessday.ng/?p=145802
 
 ### F7. Data-centre / sovereign-cloud landscape: **Secondary**
 - NITDA reportedly signed instruments for a **National Sovereign Cloud Initiative** on 4 August 2026, with

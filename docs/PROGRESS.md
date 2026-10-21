@@ -3,12 +3,55 @@
 | Phase | Scope | Status | Date |
 |---|---|---|---|
 | 1 | CLAUDE.md, architecture, flows, events, risks, hosting + regulatory ADRs | Done | 2026-10-21 |
-| 2 | Schema, migrations, ledgers + projections, RLS, seed, invariant/RLS/concurrency tests | **Done, awaiting "next"** | 2026-10-21 |
-| 3 | Auth, per-role routing, registration + approval, KYC interface + mock, geofence, branch/territory/warehouse mgmt | Not started | |
+| 2 | Schema, migrations, ledgers + projections, RLS, seed, invariant/RLS/concurrency tests | Done | 2026-10-21 |
+| 3 | Auth, per-role routing, registration + approval, KYC interface + mock, geofence, branch/territory/warehouse mgmt | **Done, awaiting "next"** | 2026-10-21 |
 | 4 | Catalogue, inventory, transfers, pull flow + routing, batching/packing UI, delivery + e-POD + partial/missing | Not started | |
 | 5a | Push: request → approve → OTP handover → return → reconciliation (variance approval, close blocking) | Not started | |
 | 5b | Wallet ledger, trade credit + credit OTP, payment webhooks + reconciliation, offline agent app + sync | Not started | |
 | 6 | Dashboards, notifications, support tickets, hardening, E2E of both flows on the same stock | Not started | |
+
+## Phase 3: what exists
+`npm run test:all` now runs: clean reset → 349 pgTAP assertions → typecheck (root + 4 workspaces) →
+24 Node tests (unit, KYC contract, concurrency, commit-time invariants, **end-to-end flows through
+Supabase Auth + PostgREST as real users**) → Next.js production build.
+
+| Area | Where | Proven by |
+|---|---|---|
+| ADR-0005 KYC provider research + decision (match-only interface, Smile ID preferred/unverified, Dojah BVN fallback, Youverify rejected) | `docs/adr/0005-kyc-provider.md` | n/a |
+| Authorisation helpers for commands (`require_role`, `require_branch_manager`, `make_point`) | `migrations/20261022000200_authz_helpers.sql` | 007 |
+| Org structure: onboard org (platform), branches, territories (validated GeoJSON boundary), warehouses (+ stock location), deactivate guard, distributor settings | `…0300_org_structure_commands.sql` | 007 |
+| Registration + approval: retailer self-registration with GPS accuracy and territory suggestion, extra distributor requests, customer approve/reject (with reason), staff/agent join requests, SoD (no self-approval, BMs can't appoint BMs, branch-scoped approvals) | `…0100_record_status_rejected.sql`, `…0400_registration.sql`, `…0800_applicant_visibility.sql` | 007, integration |
+| KYC storage: append-only `kyc_checks` (outcome + provider ref + HMAC digest, column-level grants hide digest/ref), `kyc_level`, duplicate-identity surfacing, service_role-only recording | `…0500_kyc_geofence.sql`, `…0600_phase3_rls_grants.sql` | 001, 007, integration |
+| Geofence: `app.evaluate_geofence` (spheroid distance, configurable radius/accuracy, fails closed), scoped `app.check_geofence` | `…0500_kyc_geofence.sql` | 008, integration |
+| Location read views (lat/lng) | `…0700_location_views.sql` | used by UI + integration |
+| `@solus/core`: kobo money (bigint, exact parse/format), UoM, advisory geofence, error codes, role routing | `packages/core` | `packages/core/test` |
+| `@solus/integrations`: `KycProvider`, `MockKycProvider`, identity digest, `verifyAndRecordKyc`, reusable contract suite | `packages/integrations` | `packages/integrations/test` |
+| `@solus/db`: repository layer (user-scoped) + adapter repository (service_role, KYC only), generated DB types | `packages/db` | integration |
+| Web app (Next.js 15.5.27): login/signup, role routing, onboarding (shop registration with browser geolocation, join requests), distributor console (approvals, structure, settings + geofence tester), retailer console (distributors, KYC), platform onboarding, manufacturer + field placeholders | `apps/web` | production build; manual browser check below |
+
+**Manual browser check (2026-10-21, local dev on :3100):** anonymous → redirected to /login. Lekki
+branch manager → distributor console. Approvals list shows the applicant's name/phone. Trying to place
+an agent in the Ikeja branch showed the database's `forbidden` error in the UI. retailer03 → shop console.
+BVN check with the mock moved KYC level 0 → 1. Server logs: no errors, and the ID number appears nowhere.
+
+**Bugs found by Phase 3 tests and fixed:**
+- KYC "latest attempt" ordered by `checked_at`, which is identical inside one transaction. Now ordered by
+  an identity `seq`.
+- Approvers couldn't see applicants' names (no membership yet means no profile visibility). Applicants
+  with a join request are now visible to that org's admins/BMs, and only to them (pgTAP + integration).
+
+## Phase 3: known gaps
+- **Real KYC adapter not built.** Smile ID's signature algorithm page and V3 docs are unread (ADR-0005).
+  Only the mock is wired. The contract suite is ready for the real adapter.
+- **Phone numbers are collected but not verified.** SMS/OTP arrives with the OTP work in Phase 5a (ADR-0006
+  moved there).
+- No admin "invite by email" flow: staff join via request + approval. Platform onboarding needs the new
+  admin's user ID, pasted from their onboarding page.
+- Territory boundaries can be created but not edited. There are no rename/delete commands for structure yet.
+- CBN tier limits remain unverified (conflicting vendor figures). Nothing hard-codes them.
+- UI is functional and unstyled beyond basics. No automated browser E2E (API path covered by integration tests).
+- `service_role` has **no** table privileges (only granted functions), stricter than Supabase's default.
+  Future adapters must be given explicit function grants.
 
 ## Phase 2: what exists
 Run everything with `npm run test:all` (clean DB → 269 pgTAP assertions → typecheck → 5 Node tests).

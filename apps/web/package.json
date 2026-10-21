@@ -1,0 +1,27 @@
+{
+  "name": "@solus/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port ${PORT:-3100}",
+    "build": "next build",
+    "start": "next start --port ${PORT:-3100}",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@solus/core": "*",
+    "@solus/db": "*",
+    "@solus/integrations": "*",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.117.2",
+    "next": "15.5.27",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
+  }
+}

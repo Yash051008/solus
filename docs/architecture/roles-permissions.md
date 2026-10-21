@@ -81,6 +81,16 @@ Policies use the form `org_id = any((select app.current_org_ids()))`, with an in
 | Support tickets / disputes | P (all) | M (own) | D | B | O | O | O | O |
 | Dashboards | P | M (aggregates) | D | B | B (inventory) | – | O (own KPIs) | O (own history) |
 
+### Registration and approval rules (Phase 3, `supabase/tests/007_phase3_commands.test.sql`)
+- Retailers self-register one shop per account, with GPS accuracy. The relationship starts `pending` with
+  a suggested territory (boundary containment, else the nearest warehouse's branch).
+- A customer is approved or rejected by the distributor admin, or by the branch manager of the branch that
+  owns the (possibly reassigned) territory. Rejection needs a reason. Nobody approves a shop they're a member of.
+- Staff/agent/driver join requests are decided by the distributor admin, or by a branch manager **for their
+  own branch only** and never for the `branch_manager` role. Nobody decides their own request.
+- Applicants (users with a join request) are visible, name and phone only, to that org's admins and branch
+  managers so they can be vetted.
+
 ### Separation-of-duties rules (enforced inside `app.*` functions, tested in pgTAP)
 1. The requester of an adjustment or write-off cannot approve it.
 2. The staff member initiating a handover cannot be its receiving party, and the OTP goes to the receiver's

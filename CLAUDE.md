@@ -103,12 +103,15 @@ docs/               spec, architecture, ADRs, progress
 ## Commands
 | Purpose | Command |
 |---|---|
-| **Full suite from a clean DB** (reset + migrations + seed, pgTAP, typecheck, Node concurrency/invariant tests) | `npm run test:all` |
+| **Full suite from a clean DB** (reset + seed → pgTAP → typecheck all workspaces → Node unit/contract/concurrency/invariant/end-to-end tests → web production build) | `npm run test:all` |
 | Start local stack (db, auth, rest only) | `npm run db:start` |
 | Reset DB (migrations + seed) | `npm run db:reset` |
 | pgTAP only | `npm run test:db` |
 | Node DB tests only (needs a reset DB) | `npm run test:node` |
 | Typecheck | `npm run typecheck` |
+| Write `apps/web/.env.local` from the running stack | `npm run web:env` |
+| Web dev server (http://localhost:3100; port 3000 is taken by Docker here) | `npm run dev --workspace @solus/web` |
+| Regenerate DB types after a migration | `npm run db:types` |
 
 `scripts/test-all.sh` exits with code 2 and does not run if Docker or the Supabase CLI is missing.
 Local DB: `postgresql://postgres:postgres@127.0.0.1:54322/postgres` (override with `DATABASE_URL`).
@@ -126,6 +129,20 @@ Seeded users: `<handle>@solus.test`, password `SolusDev-2026!` (local only, hand
   must return a failure result, not raise.
 - Tests that need deferred constraint triggers to fire inside a rolled-back pgTAP transaction use
   `set constraints all immediate`.
+- `now()` is fixed for the whole transaction. Never order "latest" rows by a timestamp alone: use an
+  identity `seq` column.
+- pgTAP helpers that look up ids must read snapshots taken as the owner (temp tables), not live tables.
+  After `set role authenticated` the lookup is filtered by the caller's RLS.
+- Integration tests must use run-unique fixture values: the stack isn't reset between `test:node` runs.
+
+## API surface
+- Commands live in schema `app`, exposed through PostgREST (`supabase/config.toml` `api.schemas`). Only
+  functions with an explicit `EXECUTE` grant are callable. `supabase/tests/001_schema_grants.test.sql`
+  holds the allowlist, so adding a client-callable function means adding it there deliberately.
+- `auto_expose_new_tables = false`: nothing is exposed without an explicit grant. `service_role` holds
+  **no table privileges**, only EXECUTE on adapter functions (currently `app.record_kyc_result`).
+- TypeScript reaches the DB only through `packages/db` (`createRepository` for user-scoped calls,
+  `createAdapterRepository` for server adapters).
 
 Environment as of 2026-10-21: Node v26.4.0, npm 11.17.0, Docker 29.5.2 (running), Supabase CLI 2.121.0,
 Postgres 17 (local image). No psql on the host: use `docker exec supabase_db_solus psql -U postgres`.

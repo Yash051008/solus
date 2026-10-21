@@ -1,6 +1,6 @@
 'use server';
 import { randomUUID } from 'node:crypto';
-import { formatNaira, kobo } from '@solus/core';
+import { formatNaira, kobo, nairaToKobo } from '@solus/core';
 import { getRepo } from '@/lib/supabase/server';
 import { mutate, num, text } from '@/lib/forms';
 
@@ -61,4 +61,10 @@ export async function confirmReturn(fd: FormData) {
     const status = await (await getRepo()).fulfilment.confirmReturn(text(fd, 'shipmentId'));
     message = status === 'closed' ? 'Return confirmed. Shipment closed.' : 'Return confirmed. Some stock is unaccounted for and needs review.';
   }, () => message);
+}
+
+export async function recordCash(fd: FormData) {
+  await mutate('/field', async () => {
+    await (await getRepo()).finance.recordDeliveryCash(text(fd, 'orderId'), nairaToKobo(text(fd, 'naira')), text(fd, 'idempotencyKey'));
+  }, 'Cash recorded. Remit it to the distributor\'s account.');
 }

@@ -15,7 +15,7 @@ export default async function DistributorLayout({ children, params }: {
     { href: `${base}/fulfilment`, label: 'Fulfilment' },
     { href: `${base}/push`, label: 'Agent stock' },
     { href: `${base}/structure`, label: 'Branches & warehouses' },
-    ...(membership.role === 'distributor_admin' ? [{ href: `${base}/settings`, label: 'Settings' }] : []),
+    ...(membership.role === 'distributor_admin' ? [{ href: `${base}/finance`, label: 'Finance' }, { href: `${base}/settings`, label: 'Settings' }] : []),
   ];
   return <Shell nav={nav}>{children}</Shell>;
 }

@@ -6,11 +6,16 @@ out=apps/web/.env.local
 eval "$(supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY)=')"
 pepper=$(grep -E '^KYC_ID_PEPPER=' "$out" 2>/dev/null | cut -d= -f2- || true)
 [ -n "$pepper" ] || pepper=$(node -e 'console.log(require("node:crypto").randomBytes(32).toString("hex"))')
+whsec=$(grep -E '^PAYMENTS_WEBHOOK_SECRET=' "$out" 2>/dev/null | cut -d= -f2- || true)
+[ -n "$whsec" ] || whsec=$(node -e 'console.log(require("node:crypto").randomBytes(32).toString("hex"))')
 cat > "$out" <<EOF
 NEXT_PUBLIC_SUPABASE_URL=$API_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
 KYC_ID_PEPPER=$pepper
 KYC_PROVIDER=mock
+PAYMENTS_PROVIDER=mock
+PAYMENTS_WEBHOOK_SECRET=$whsec
+SMS_PROVIDER=mock
 EOF
 echo "wrote $out"

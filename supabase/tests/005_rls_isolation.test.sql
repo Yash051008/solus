@@ -3,7 +3,7 @@
 -- distributor B (abuja-central), in EVERY table. Plus positive scoping checks per role.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(301);
+select plan(325);
 
 create function pg_temp.login(p_handle text) returns void language plpgsql as $$
 begin
@@ -69,7 +69,9 @@ insert into table_keys values
   ('stock_requests', 'x.id::text'), ('stock_request_lines', 'x.id::text'), ('shipment_lines', 'x.id::text'),
   ('push_sales', 'x.id::text'), ('push_sale_lines', 'x.id::text'), ('variance_cases', 'x.id::text'),
   ('agent_devices', 'x.device_id::text'), ('sync_events', 'x.event_id::text'), ('agent_visits', 'x.id::text'),
-  ('review_items', 'x.id::text');
+  ('review_items', 'x.id::text'),
+  ('virtual_accounts', 'x.id::text'), ('provider_events', 'x.id::text'), ('receipt_allocations', 'x.id::text'),
+  ('order_payments', 'x.id::text');
 
 select is(
   (select array_agg(tablename::text order by 1) from pg_tables
@@ -139,7 +141,11 @@ union all select 'variance_cases', id::text from public.variance_cases where org
 union all select 'agent_devices', device_id::text from public.agent_devices where org_id = (select id from b)
 union all select 'sync_events', event_id::text from public.sync_events where org_id = (select id from b)
 union all select 'agent_visits', id::text from public.agent_visits where org_id = (select id from b)
-union all select 'review_items', id::text from public.review_items where org_id = (select id from b);
+union all select 'review_items', id::text from public.review_items where org_id = (select id from b)
+union all select 'virtual_accounts', id::text from public.virtual_accounts where org_id in (select id from b_orgs)
+union all select 'provider_events', id::text from public.provider_events where org_id in (select id from b_orgs)
+union all select 'receipt_allocations', id::text from public.receipt_allocations where org_id = (select id from b)
+union all select 'order_payments', id::text from public.order_payments where distributor_org_id = (select id from b);
 
 select is(
   (select array_agg(k.tbl order by 1) from table_keys k

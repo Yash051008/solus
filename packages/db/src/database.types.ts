@@ -20,6 +20,9 @@ export type Database = {
 "add_sku_uom":
 { Args: { "p_pieces_per_uom": number,"p_sku_id": string,"p_uom_code": string }; Returns: undefined
                            },
+"allocate_receipt":
+{ Args: { "p_amount_kobo": number,"p_event_id": string,"p_target_id": string,"p_target_kind": string }; Returns: string
+                           },
 "apply_bps":
 { Args: { "p_amount_kobo": number,"p_bps": number,"p_mode"?: string }; Returns: number
                            },
@@ -65,6 +68,9 @@ export type Database = {
                            },
 "close_shipment":
 { Args: { "p_shipment_id": string }; Returns: undefined
+                           },
+"complete_order_payment":
+{ Args: { "p_payment_id": string }; Returns: string
                            },
 "complete_push_handover":
 { Args: { "p_shipment_id": string }; Returns: undefined
@@ -183,6 +189,9 @@ export type Database = {
 "open_otp_challenge":
 { Args: { "p_initiator": string,"p_payload_hash"?: string,"p_purpose": string,"p_recipient": string,"p_subject_id": string,"p_subject_kind": string }; Returns: string
                            },
+"order_amount_due":
+{ Args: { "p_order_id": string }; Returns: number
+                           },
 "piece_price_kobo":
 { Args: { "p_distributor_id": string,"p_sku_id": string }; Returns: number
                            },
@@ -195,17 +204,29 @@ export type Database = {
 "post_stock_movement":
 { Args: { "p_group_id": string,"p_idempotency_key"?: string,"p_location_id": string,"p_qty": number,"p_reason"?: string,"p_ref_id"?: string,"p_ref_kind"?: string,"p_sign"?: number,"p_sku_id": string,"p_type": Database["public"]['Enums']["movement_type"] }; Returns: string
                            },
+"provision_virtual_account":
+{ Args: { "p_account_number": string,"p_bank_name": string,"p_org_id": string,"p_provider": string,"p_provider_ref": string }; Returns: string
+                           },
 "publish_price_list":
 { Args: { "p_distributor_id": string,"p_effective_from": string,"p_items": Json,"p_name": string }; Returns: string
                            },
 "receive_transfer":
 { Args: { "p_lines": Json,"p_transfer_id": string }; Returns: string
                            },
+"reconcile_provider":
+{ Args: { "p_lines": Json,"p_provider": string }; Returns: Json
+                           },
 "record_delivery":
 { Args: { "p_accuracy_m": number,"p_idempotency_key": string,"p_lat": number,"p_lines": Json,"p_lng": number,"p_order_id": string,"p_photo_path": string,"p_recipient_name": string,"p_shipment_id": string }; Returns: Json
                            },
+"record_delivery_cash":
+{ Args: { "p_amount_kobo": number,"p_idempotency_key": string,"p_order_id": string }; Returns: string
+                           },
 "record_kyc_result":
 { Args: { "p_id_hash": string,"p_id_type": string,"p_org_id": string,"p_outcome": string,"p_provider": string,"p_provider_ref": string,"p_subject_user_id": string }; Returns: Json
+                           },
+"record_provider_event":
+{ Args: { "p_account_number": string,"p_amount_kobo": number,"p_paid_at"?: string,"p_payload_hash": string,"p_provider": string,"p_provider_event_id": string,"p_reference": string }; Returns: Json
                            },
 "record_push_sale":
 { Args: { "p_accuracy_m": number,"p_idempotency_key": string,"p_lat": number,"p_lines": Json,"p_lng": number,"p_retailer_org_id": string,"p_shipment_id": string }; Returns: Json
@@ -226,6 +247,9 @@ export type Database = {
 { Args: Record<PropertyKey, never>; Returns: {
               "id": string,"name": string
             }[]
+                           },
+"repay_credit":
+{ Args: { "p_amount_kobo": number,"p_distributor_id": string,"p_idempotency_key": string,"p_retailer_org_id": string }; Returns: string
                            },
 "request_adjustment":
 { Args: { "p_qty_delta": number,"p_reason": string,"p_sku_id": string,"p_warehouse_id": string }; Returns: string
@@ -275,6 +299,9 @@ export type Database = {
 "route_and_reserve":
 { Args: { "p_order_id": string }; Returns: string
                            },
+"set_credit_limit":
+{ Args: { "p_limit_kobo": number,"p_relationship_id": string }; Returns: undefined
+                           },
 "set_sku_active":
 { Args: { "p_active": boolean,"p_sku_id": string }; Returns: undefined
                            },
@@ -286,6 +313,9 @@ export type Database = {
                            },
 "start_handover":
 { Args: { "p_shipment_id": string }; Returns: string
+                           },
+"start_order_payment":
+{ Args: { "p_credit_kobo": number,"p_idempotency_key": string,"p_order_id": string,"p_wallet_kobo": number }; Returns: Json
                            },
 "start_push_return":
 { Args: { "p_lines": Json,"p_shipment_id": string }; Returns: string
@@ -1087,6 +1117,68 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"order_payments": {
+                  Row: {
+                    "cash_kobo": number,"challenge_id": string | null,"created_at": string,"created_by": string,"credit_kobo": number,"distributor_org_id": string,"id": string,"idempotency_key": string,"journal_id": string | null,"order_id": string,"retailer_org_id": string,"settled_at": string | null,"status": string,"wallet_kobo": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cash_kobo"?: number,"challenge_id"?: string | null,"created_at"?: string,"created_by": string,"credit_kobo"?: number,"distributor_org_id": string,"id"?: string,"idempotency_key": string,"journal_id"?: string | null,"order_id": string,"retailer_org_id": string,"settled_at"?: string | null,"status": string,"wallet_kobo"?: number
+                  }
+                  Update: {
+                    "cash_kobo"?: number,"challenge_id"?: string | null,"created_at"?: string,"created_by"?: string,"credit_kobo"?: number,"distributor_org_id"?: string,"id"?: string,"idempotency_key"?: string,"journal_id"?: string | null,"order_id"?: string,"retailer_org_id"?: string,"settled_at"?: string | null,"status"?: string,"wallet_kobo"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "order_payments_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "order_payments_distributor_org_id_fkey"
+      columns: ["distributor_org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_payments_distributor_org_id_fkey"
+      columns: ["distributor_org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_payments_journal_id_fkey"
+      columns: ["journal_id"]
+isOneToOne: false
+      referencedRelation: "journals"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_payments_order_id_fkey"
+      columns: ["order_id"]
+isOneToOne: false
+      referencedRelation: "orders"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_payments_order_id_fkey"
+      columns: ["order_id"]
+isOneToOne: false
+      referencedRelation: "v_orders"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_payments_retailer_org_id_fkey"
+      columns: ["retailer_org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "order_payments_retailer_org_id_fkey"
+      columns: ["retailer_org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"orders": {
                   Row: {
                     "cancelled_reason": string | null,"confirmed_at": string | null,"created_at": string,"distributor_org_id": string,"id": string,"idempotency_key": string | null,"order_kind": Database["public"]['Enums']["order_kind"],"placed_by_role": Database["public"]['Enums']["member_role"] | null,"placed_by_user_id": string | null,"retailer_org_id": string,"routing_decision": Json | null,"routing_reason": string | null,"status": Database["public"]['Enums']["order_status"],"updated_at": string
@@ -1104,6 +1196,12 @@ isOneToOne: false
       columns: ["distributor_org_id","retailer_org_id"]
 isOneToOne: false
       referencedRelation: "customer_relationships"
+      referencedColumns: ["distributor_org_id","retailer_org_id"]
+    },{
+      foreignKeyName: "orders_distributor_org_id_retailer_org_id_fkey"
+      columns: ["distributor_org_id","retailer_org_id"]
+isOneToOne: false
+      referencedRelation: "v_credit_positions"
       referencedColumns: ["distributor_org_id","retailer_org_id"]
     },{
       foreignKeyName: "orders_placed_by_user_id_fkey"
@@ -1199,6 +1297,38 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"provider_events": {
+                  Row: {
+                    "account_number": string,"amount_kobo": number,"duplicate_count": number,"hash_conflict": boolean,"id": string,"journal_id": string | null,"last_duplicate_at": string | null,"org_id": string | null,"paid_at": string | null,"payload_hash": string,"provider": string,"provider_event_id": string,"received_at": string,"reference": string,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_number": string,"amount_kobo": number,"duplicate_count"?: number,"hash_conflict"?: boolean,"id"?: string,"journal_id"?: string | null,"last_duplicate_at"?: string | null,"org_id"?: string | null,"paid_at"?: string | null,"payload_hash": string,"provider": string,"provider_event_id": string,"received_at"?: string,"reference": string,"status": string
+                  }
+                  Update: {
+                    "account_number"?: string,"amount_kobo"?: number,"duplicate_count"?: number,"hash_conflict"?: boolean,"id"?: string,"journal_id"?: string | null,"last_duplicate_at"?: string | null,"org_id"?: string | null,"paid_at"?: string | null,"payload_hash"?: string,"provider"?: string,"provider_event_id"?: string,"received_at"?: string,"reference"?: string,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "provider_events_journal_id_fkey"
+      columns: ["journal_id"]
+isOneToOne: false
+      referencedRelation: "journals"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "provider_events_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "provider_events_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"push_sale_lines": {
                   Row: {
                     "amount_kobo": number | null,"id": string,"qty_pieces": number,"sale_id": string,"sku_id": string,"unit_price_kobo": number
@@ -1273,6 +1403,68 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "v_shipment_reconciliation"
       referencedColumns: ["shipment_id"]
+    }
+                  ]
+                },"receipt_allocations": {
+                  Row: {
+                    "allocated_by": string,"amount_kobo": number,"created_at": string,"id": string,"journal_id": string,"org_id": string,"provider_event_id": string,"target_kind": string,"target_org_id": string | null,"target_user_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "allocated_by": string,"amount_kobo": number,"created_at"?: string,"id"?: string,"journal_id": string,"org_id": string,"provider_event_id": string,"target_kind": string,"target_org_id"?: string | null,"target_user_id"?: string | null
+                  }
+                  Update: {
+                    "allocated_by"?: string,"amount_kobo"?: number,"created_at"?: string,"id"?: string,"journal_id"?: string,"org_id"?: string,"provider_event_id"?: string,"target_kind"?: string,"target_org_id"?: string | null,"target_user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "receipt_allocations_allocated_by_fkey"
+      columns: ["allocated_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "receipt_allocations_journal_id_fkey"
+      columns: ["journal_id"]
+isOneToOne: false
+      referencedRelation: "journals"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "receipt_allocations_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "receipt_allocations_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "receipt_allocations_provider_event_id_fkey"
+      columns: ["provider_event_id"]
+isOneToOne: false
+      referencedRelation: "provider_events"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "receipt_allocations_target_org_id_fkey"
+      columns: ["target_org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "receipt_allocations_target_org_id_fkey"
+      columns: ["target_org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "receipt_allocations_target_user_id_fkey"
+      columns: ["target_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
     }
                   ]
                 },"receipts": {
@@ -1989,6 +2181,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"virtual_accounts": {
+                  Row: {
+                    "account_number": string,"bank_name": string,"created_at": string,"id": string,"org_id": string,"provider": string,"provider_ref": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_number": string,"bank_name": string,"created_at"?: string,"id"?: string,"org_id": string,"provider": string,"provider_ref": string
+                  }
+                  Update: {
+                    "account_number"?: string,"bank_name"?: string,"created_at"?: string,"id"?: string,"org_id"?: string,"provider"?: string,"provider_ref"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "virtual_accounts_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: true
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "virtual_accounts_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: true
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"warehouses": {
                   Row: {
                     "active": boolean,"branch_id": string,"created_at": string,"id": string,"location": unknown,"name": string,"org_id": string
@@ -2032,6 +2250,20 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"v_credit_positions": {
+                  Row: {
+                    "credit_limit_kobo": number | null,"distributor_org_id": string | null,"drawn_kobo": number | null,"receivable_kobo": number | null,"relationship_id": string | null,"retailer_org_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "credit_limit_kobo"?: number | null,"distributor_org_id"?: string | null,"drawn_kobo"?: never,"receivable_kobo"?: never,"relationship_id"?: string | null,"retailer_org_id"?: string | null
+                         }
+                        Update: {
+                           "credit_limit_kobo"?: number | null,"distributor_org_id"?: string | null,"drawn_kobo"?: never,"receivable_kobo"?: never,"relationship_id"?: string | null,"retailer_org_id"?: string | null
+                         }
+                        Relationships: [
+                    
+                  ]
                 },"v_current_prices": {
                   Row: {
                     "distributor_org_id": string | null,"effective_from": string | null,"price_kobo": number | null,"price_list_id": string | null,"sku_id": string | null,"uom_code": string | null
@@ -2063,6 +2295,12 @@ isOneToOne: false
       columns: ["distributor_org_id","retailer_org_id"]
 isOneToOne: false
       referencedRelation: "customer_relationships"
+      referencedColumns: ["distributor_org_id","retailer_org_id"]
+    },{
+      foreignKeyName: "orders_distributor_org_id_retailer_org_id_fkey"
+      columns: ["distributor_org_id","retailer_org_id"]
+isOneToOne: false
+      referencedRelation: "v_credit_positions"
       referencedColumns: ["distributor_org_id","retailer_org_id"]
     }
                   ]
@@ -2178,7 +2416,7 @@ isOneToOne: false
             [_ in never]: never
           }
           Enums: {
-            "account_type": "provider_clearing"|"wallet"|"partner_funds"|"receivables"|"trade_credit"|"cash_in_transit"|"variance"|"variance_offset"|"sales_revenue","location_kind": "warehouse"|"agent"|"driver","member_role": "platform_admin"|"manufacturer_admin"|"distributor_admin"|"branch_manager"|"warehouse_staff"|"driver"|"agent"|"retailer","movement_type": "receipt"|"reserve"|"release"|"transfer_out"|"transfer_in"|"handover"|"sale"|"return"|"damage"|"adjustment","order_kind": "pull"|"primary","order_status": "placed"|"awaiting_split_decision"|"reserved"|"rejected"|"batched"|"packed"|"dispatched"|"delivered"|"partially_delivered"|"failed_delivery"|"settled"|"cancelled","org_kind": "platform"|"manufacturer"|"distributor"|"retailer","record_status": "pending"|"active"|"suspended"|"rejected"
+            "account_type": "provider_clearing"|"wallet"|"partner_funds"|"receivables"|"trade_credit"|"cash_in_transit"|"variance"|"variance_offset"|"sales_revenue"|"unallocated_receipts","location_kind": "warehouse"|"agent"|"driver","member_role": "platform_admin"|"manufacturer_admin"|"distributor_admin"|"branch_manager"|"warehouse_staff"|"driver"|"agent"|"retailer","movement_type": "receipt"|"reserve"|"release"|"transfer_out"|"transfer_in"|"handover"|"sale"|"return"|"damage"|"adjustment","order_kind": "pull"|"primary","order_status": "placed"|"awaiting_split_decision"|"reserved"|"rejected"|"batched"|"packed"|"dispatched"|"delivered"|"partially_delivered"|"failed_delivery"|"settled"|"cancelled","org_kind": "platform"|"manufacturer"|"distributor"|"retailer","record_status": "pending"|"active"|"suspended"|"rejected"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -2298,7 +2536,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "account_type": ["provider_clearing", "wallet", "partner_funds", "receivables", "trade_credit", "cash_in_transit", "variance", "variance_offset", "sales_revenue"],"location_kind": ["warehouse", "agent", "driver"],"member_role": ["platform_admin", "manufacturer_admin", "distributor_admin", "branch_manager", "warehouse_staff", "driver", "agent", "retailer"],"movement_type": ["receipt", "reserve", "release", "transfer_out", "transfer_in", "handover", "sale", "return", "damage", "adjustment"],"order_kind": ["pull", "primary"],"order_status": ["placed", "awaiting_split_decision", "reserved", "rejected", "batched", "packed", "dispatched", "delivered", "partially_delivered", "failed_delivery", "settled", "cancelled"],"org_kind": ["platform", "manufacturer", "distributor", "retailer"],"record_status": ["pending", "active", "suspended", "rejected"]
+            "account_type": ["provider_clearing", "wallet", "partner_funds", "receivables", "trade_credit", "cash_in_transit", "variance", "variance_offset", "sales_revenue", "unallocated_receipts"],"location_kind": ["warehouse", "agent", "driver"],"member_role": ["platform_admin", "manufacturer_admin", "distributor_admin", "branch_manager", "warehouse_staff", "driver", "agent", "retailer"],"movement_type": ["receipt", "reserve", "release", "transfer_out", "transfer_in", "handover", "sale", "return", "damage", "adjustment"],"order_kind": ["pull", "primary"],"order_status": ["placed", "awaiting_split_decision", "reserved", "rejected", "batched", "packed", "dispatched", "delivered", "partially_delivered", "failed_delivery", "settled", "cancelled"],"org_kind": ["platform", "manufacturer", "distributor", "retailer"],"record_status": ["pending", "active", "suspended", "rejected"]
           }
         }
 } as const

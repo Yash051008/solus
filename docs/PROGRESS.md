@@ -7,18 +7,18 @@
 | 3 | Auth, per-role routing, registration + approval, KYC interface + mock, geofence, branch/territory/warehouse mgmt | Done | 2026-10-21 |
 | 4 | Catalogue, inventory, transfers, pull flow + routing, batching/packing UI, delivery + e-POD + partial/missing | **Done** (4a DB `9278024`, 4b screens `4c4fcc9`..`6bd1df1`) | 2026-10-21 |
 | 5a | Push: request → approve → OTP handover → return → reconciliation (variance approval, close blocking) | **Done** (`7520c72`, `f04d1de`, `b9911bc`) | 2026-10-22 |
-| 5b | Wallet ledger, trade credit + credit OTP, payment webhooks + reconciliation, offline agent app + sync | Not started | |
+| 5b | Wallet ledger, trade credit + credit OTP, payment webhooks + reconciliation, offline agent app + sync | **Done** (5b-2 `3623d19`, 5b-1 this commit) | 2026-10-22 |
 | 6 | Dashboards, notifications, support tickets, hardening, E2E of both flows on the same stock | Not started | |
 
 ## ▶ Resume here
 Autonomous run (user instruction, 2026-10-22): build 5b-2 → 5b-1 → Phase 6 without waiting for "next";
 after each step typecheck + `npm run test:all` + commit + update this section. Final report at the end.
-- **Done:** 5b-2 offline agent app (this commit).
-- **Next:** 5b-1. Wallet + virtual accounts (ADR-0008 research first: Paystack DVA / Monnify /
-  Flutterwave), signed idempotent payment webhooks (duplicate test), order settlement from wallet and/or
-  trade credit with credit OTP (`otp_challenges` purpose `credit`), credit limits, cash remittance via
-  unallocated receipts, provider statement reconciliation. Then Phase 6.
-- Last verified: `npm run test:all` passes (582 pgTAP, 36 Node tests, typecheck, web build, Expo Android bundle).
+- **Done:** 5b-2 offline agent app (`3623d19`), 5b-1 payments (this commit).
+- **Next:** Phase 6, in two commits. (a) dashboards (sales, inventory, agent leaderboard, SKU performance,
+  financial, manufacturer aggregates without retailer data), notifications (domain events → per-user inbox),
+  support tickets (with delivery-dispute resolution). (b) hardening (index audit for policy/FK columns,
+  security checks) and a final end-to-end test of pull + push on the same stock. Then the final report.
+- Last verified: `npm run test:all` passes (637 pgTAP, 43 Node tests, typecheck, web build, Expo Android bundle).
 - Run locally: `npm run db:start` → `npm run db:reset` → `npm run web:env` → `npm run dev --workspace @solus/web`
   (http://localhost:3100). Phone: `npm run agent:env` → `npm run agent:start`, then scan the QR with Expo Go
   (same Wi-Fi). Password `SolusDev-2026!` for every seeded user (`@solus.test`).
@@ -32,6 +32,32 @@ after each step typecheck + `npm run test:all` + commit + update this section. F
   "accept as is". There's no money journal for it, because no money is missing.
 - A rejected event is never resent by the device. It stays visible as "in review" until a manager acts.
 - `next build` in `test:all` writes to `.next-build`, so it never breaks a running `next dev`.
+- Payments: all inbound money is a transfer to a partner virtual account (no cards). Money into a
+  distributor's VA lands in `unallocated_receipts` until an admin allocates it. Partial payments are
+  allowed. Starting a new payment cancels a pending (unconfirmed) one. Credit limits are set by the
+  distributor admin only.
+- KYC level doesn't gate credit yet. The limit is the control (configurable gating left for later).
+
+## Phase 5b-1: what exists
+- ADR-0008: Paystack DVA preferred (signature header unverified), Monnify/Flutterwave alternatives
+  (unverified). The platform never holds funds: VA wallets mirror partner balances.
+- DB (`20261027000100/0200`): `unallocated_receipts` account type; `virtual_accounts`; `provider_events`
+  (idempotent on provider + event id, duplicate count, payload-hash conflict flag, unmatched accounts);
+  `record_provider_event` (service_role only); `order_payments` + `start_order_payment` (wallet-only settles
+  at once, any credit requires the shop owner's OTP) + `complete_order_payment` (credit-limit row lock,
+  one split journal); `record_delivery_cash`; `repay_credit`; `set_credit_limit` (admin);
+  `allocate_receipt` (agent cash / shop debt); `reconcile_provider`; `v_credit_positions`. Seed: VAs for all
+  shops and distributors, remittances (Lagos Prime unallocated, Abuja allocated), a part-paid order.
+- `@solus/integrations`: `VirtualAccountProvider`, `MockVirtualAccountProvider` (HMAC-SHA512 signatures,
+  deterministic account numbers, statement), `handlePaymentWebhook` (401 / 200 posted / 200 duplicate /
+  500 retry).
+- Web: `/api/webhooks/payments/[provider]` (no session, signature only); retailer **Wallet** (balance, VA,
+  dev "simulate transfer" that goes through the real webhook endpoint, credit positions, repay, statement);
+  **Pay** on My orders (wallet + credit with SMS OTP); distributor **Finance** (totals, allocate receipts,
+  credit limits); platform **Payments** (events, reconciliation); driver records cash at delivery.
+- Tests: `012_payments` (30), payments unit/contract (4), integration `payments.test.ts` (seed numbering =
+  mock, duplicate webhook through the handler, credit payment with SMS OTP). Browser-checked: test transfer
+  ₦125,000 → ₦130,000 via HTTP webhook; credit OTP received; credit over the ₦0 limit refused.
 
 ## Phase 5b-2: what exists
 - DB (`20261026000100_offline_sync.sql`): `agent_devices` (seq high-water), `sync_events` (event_id PK,

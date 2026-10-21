@@ -7,7 +7,7 @@ select plan(24);
 create temp table fx as
 select
   p.id as platform, d.id as dist, r.id as retailer,
-  app.ensure_account(p.id, 'provider_clearing', p_provider => 'mockpay') as clearing,
+  app.ensure_account(p.id, 'provider_clearing', p_provider => 'mock') as clearing,
   app.ensure_account(p.id, 'wallet', p_holder_org_id => r.id) as r_wallet,
   app.ensure_account(p.id, 'wallet', p_holder_org_id => d.id) as d_wallet,
   app.ensure_account(d.id, 'partner_funds') as d_funds,
@@ -92,6 +92,8 @@ select throws_ok($$ select app.post_journal('settle_wallet', 'test:overdraft:1',
                                       fx.d_funds::text, '20000000', fx.d_recv::text, '-20000000')) from fx $$,
                  '23514', null, 'spending more than the wallet holds violates account_balances_sign_rules');
 
+create temp table baseline as select (select coalesce(balance_kobo, 0) from public.v_account_balances, fx where account_id = fx.d_funds) as d_funds;
+
 -- Split payment: N30,000 invoice, N20,000 from wallet + N10,000 on trade credit, one journal, two books
 select lives_ok($$ select app.post_journal('delivery_invoiced', 'test:invoice:0001',
                      pg_temp.entries(fx.d_recv::text, '3000000', fx.d_revenue::text, '-3000000')) from fx $$,
@@ -105,7 +107,7 @@ select results_eq(
   $$ select b.account_id, b.balance_kobo from public.v_account_balances b, fx
      where b.account_id in (fx.r_wallet, fx.d_recv, fx.d_credit, fx.d_funds) order by b.account_id $$,
   $$ select x.id, x.bal from fx, lateral (values (fx.r_wallet, 9750000::bigint), (fx.d_recv, 0::bigint),
-                                                 (fx.d_credit, 1000000::bigint), (fx.d_funds, 2000000::bigint)) x(id, bal)
+                                                 (fx.d_credit, 1000000::bigint), (fx.d_funds, 2000000::bigint + coalesce((select d_funds from baseline), 0))) x(id, bal)
      order by x.id $$,
   'after split: wallet N97,500, receivable 0, credit drawn N10,000, partner funds N20,000');
 

@@ -12,7 +12,7 @@ export default async function PlatformPage({ searchParams }: { searchParams: Fla
   ]);
 
   return (
-    <Shell nav={[{ href: '/platform', label: 'Platform' }]}>
+    <Shell nav={[{ href: '/platform', label: 'Platform' }, { href: '/platform/payments', label: 'Payments' }]}>
       <h1>Platform administration</h1>
       <Flash ok={ok} error={error} />
       <div className="grid">

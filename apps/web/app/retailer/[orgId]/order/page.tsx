@@ -30,7 +30,7 @@ export default async function OrderPage({ params, searchParams }: {
     .sort((a, b) => (a.sku?.code ?? '').localeCompare(b.sku?.code ?? ''));
 
   return (
-    <Shell nav={[{ href: `/retailer/${orgId}`, label: membership.orgName }, { href: `/retailer/${orgId}/order`, label: 'Order' }, { href: `/retailer/${orgId}/orders`, label: 'My orders' }]}>
+    <Shell nav={[{ href: `/retailer/${orgId}`, label: membership.orgName }, { href: `/retailer/${orgId}/order`, label: 'Order' }, { href: `/retailer/${orgId}/orders`, label: 'My orders' }, { href: `/retailer/${orgId}/wallet`, label: 'Wallet' }]}>
       <h1>Place an order</h1>
       <Flash ok={ok} error={error} />
       {relationships.length === 0 ? <p>Your shop has no approved distributor yet.</p> : (

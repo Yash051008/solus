@@ -20,7 +20,7 @@ export default async function RetailerPage({ params, searchParams }: {
   const available = directory.filter((d) => !linked.has(d.id));
 
   return (
-    <Shell nav={[{ href: `/retailer/${orgId}`, label: membership.orgName }, { href: `/retailer/${orgId}/order`, label: 'Order' }, { href: `/retailer/${orgId}/orders`, label: 'My orders' }]}>
+    <Shell nav={[{ href: `/retailer/${orgId}`, label: membership.orgName }, { href: `/retailer/${orgId}/order`, label: 'Order' }, { href: `/retailer/${orgId}/orders`, label: 'My orders' }, { href: `/retailer/${orgId}/wallet`, label: 'Wallet' }]}>
       <h1>{shop?.name}</h1>
       <p>Shop status: <Status value={shop?.status ?? 'pending'} /> · KYC level <strong>{level}</strong> of 2</p>
       <Flash ok={ok} error={error} />

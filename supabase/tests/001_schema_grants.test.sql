@@ -2,7 +2,7 @@
 -- by clients, auth.uid() only behind the seam, audit attached to every business table.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(13);
 
 select is(
   (select array_agg(tablename::text order by tablename) from pg_tables
@@ -74,7 +74,10 @@ select is(
        'verify_otp', 'request_stock', 'decide_stock_request', 'start_handover', 'record_push_sale',
        'start_push_return', 'resolve_variance',
        -- Phase 5b-2 commands
-       'register_device', 'sync_agent_events', 'review_accept_into_variance', 'review_dismiss')),
+       'register_device', 'sync_agent_events', 'review_accept_into_variance', 'review_dismiss',
+       -- Phase 5b-1 commands
+       'order_amount_due', 'allocate_receipt', 'set_credit_limit', 'start_order_payment', 'record_delivery_cash',
+       'repay_credit', 'reconcile_provider')),
   null,
   'authenticated can execute only allow-listed functions (no ledger primitives, no adapter-only functions)'
 );
@@ -109,6 +112,9 @@ select is(
   'every business table (all but the two projections) has the audit trigger'
 );
 
+select ok(not has_function_privilege('authenticated', 'app.record_provider_event(text,text,text,text,bigint,text,timestamptz)', 'execute')
+          and has_function_privilege('service_role', 'app.record_provider_event(text,text,text,text,bigint,text,timestamptz)', 'execute'),
+          'only the server webhook adapter can post provider events');
 select ok(not has_function_privilege('authenticated', 'app.issue_otp_code(uuid)', 'execute')
           and has_function_privilege('service_role', 'app.issue_otp_code(uuid)', 'execute'),
           'only the server SMS adapter can obtain OTP codes');

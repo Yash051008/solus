@@ -177,5 +177,47 @@ export function createOpsRepository(db: DbClient) {
       resolveVariance: (caseId: string, decision: 'write_off' | 'charge_agent' | 'link_handover', note: string) =>
         command(db, 'resolve_variance', { p_case_id: caseId, p_decision: decision, p_note: note }),
     },
+    finance: {
+      async virtualAccount(orgId: string) {
+        return rows(await db.from('virtual_accounts').select('account_number, bank_name, provider').eq('org_id', orgId))[0] ?? null;
+      },
+      async creditPositions(filter: { distributorId?: string; retailerOrgId?: string }) {
+        let q = db.from('v_credit_positions').select('relationship_id, distributor_org_id, retailer_org_id, credit_limit_kobo::text, drawn_kobo::text, receivable_kobo::text');
+        if (filter.distributorId) q = q.eq('distributor_org_id', filter.distributorId);
+        if (filter.retailerOrgId) q = q.eq('retailer_org_id', filter.retailerOrgId);
+        return rows(await q);
+      },
+      async balances() {
+        return rows(await db.from('accounts').select('id, book_org_id, account_type, holder_org_id, counterparty_org_id, counterparty_user_id, account_balances(balance_kobo::text)'));
+      },
+      async entries(accountIds: readonly string[], limit = 50) {
+        if (accountIds.length === 0) return [];
+        return rows(await db.from('ledger_entries').select('id, account_id, amount_kobo::text, created_at, journals(journal_type, memo)')
+          .in('account_id', [...accountIds]).order('created_at', { ascending: false }).limit(limit));
+      },
+      async providerEvents(orgId?: string) {
+        let q = db.from('provider_events').select('id, provider, provider_event_id, reference, account_number, amount_kobo::text, status, org_id, duplicate_count, hash_conflict, received_at')
+          .order('received_at', { ascending: false }).limit(100);
+        if (orgId) q = q.eq('org_id', orgId);
+        return rows(await q);
+      },
+      async allocations(orgId: string) {
+        return rows(await db.from('receipt_allocations').select('provider_event_id, amount_kobo::text').eq('org_id', orgId));
+      },
+      amountDue: (orderId: string) => command(db, 'order_amount_due', { p_order_id: orderId }) as Promise<unknown> as Promise<number>,
+      setCreditLimit: (relationshipId: string, limitKobo: bigint) =>
+        command(db, 'set_credit_limit', { p_relationship_id: relationshipId, p_limit_kobo: limitKobo.toString() as unknown as number }),
+      startPayment: (orderId: string, walletKobo: bigint, creditKobo: bigint, idempotencyKey: string) =>
+        command(db, 'start_order_payment', {
+          p_order_id: orderId, p_wallet_kobo: walletKobo.toString() as unknown as number, p_credit_kobo: creditKobo.toString() as unknown as number,
+          p_idempotency_key: idempotencyKey,
+        }) as Promise<unknown> as Promise<{ payment_id: string; status: string; challenge_id?: string }>,
+      recordDeliveryCash: (orderId: string, amountKobo: bigint, idempotencyKey: string) =>
+        command(db, 'record_delivery_cash', { p_order_id: orderId, p_amount_kobo: amountKobo.toString() as unknown as number, p_idempotency_key: idempotencyKey }),
+      repayCredit: (distributorId: string, retailerOrgId: string, amountKobo: bigint, idempotencyKey: string) =>
+        command(db, 'repay_credit', { p_distributor_id: distributorId, p_retailer_org_id: retailerOrgId, p_amount_kobo: amountKobo.toString() as unknown as number, p_idempotency_key: idempotencyKey }),
+      allocateReceipt: (eventId: string, targetKind: 'agent_cash' | 'shop_debt', targetId: string, amountKobo: bigint) =>
+        command(db, 'allocate_receipt', { p_event_id: eventId, p_target_kind: targetKind, p_target_id: targetId, p_amount_kobo: amountKobo.toString() as unknown as number }),
+    },
   };
 }

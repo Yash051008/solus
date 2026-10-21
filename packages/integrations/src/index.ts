@@ -5,3 +5,6 @@ export * from './kyc/service.ts';
 export * from './sms/types.ts';
 export * from './sms/mock.ts';
 export * from './sms/otp-service.ts';
+export * from './payments/types.ts';
+export * from './payments/mock.ts';
+export * from './payments/webhook.ts';

@@ -274,7 +274,7 @@ declare
   r record;
   v_wallet uuid;
 begin
-  v_clearing := app.ensure_account(v_platform, 'provider_clearing', p_provider => 'mockpay');
+  v_clearing := app.ensure_account(v_platform, 'provider_clearing', p_provider => 'mock');
 
   for d in select id from public.organisations where kind = 'distributor' loop
     perform app.ensure_account(v_platform, 'wallet', p_holder_org_id => d.id);
@@ -491,6 +491,33 @@ begin
                          'lines', jsonb_build_array(jsonb_build_object('sku_id', v_sku, 'qty_pieces', 15))))));
     if v_res->2->>'status' <> 'rejected' then raise exception 'seed sync expected a rejection: %', v_res; end if;
   end loop;
+  perform set_config('request.jwt.claims', '', false);
+end;
+$$;
+
+-- Phase 5b-1 demo: mock virtual accounts for every shop and distributor (same deterministic numbers the
+-- TypeScript MockVirtualAccountProvider generates), and one unallocated transfer into Lagos Prime's account.
+select app.provision_virtual_account(o.id, 'mock',
+  '99' || lpad(((('x' || substr(encode(sha256(convert_to(o.id::text, 'UTF8')), 'hex'), 1, 8))::bit(32)::bigint) % 100000000)::text, 8, '0'),
+  'Mock Bank', 'mock-va-' || o.id)
+from public.organisations o where o.kind in ('retailer', 'distributor');
+
+select app.record_provider_event('mock', 'seed-remit-0001', 'AGENT REMIT IKEJA N', va.account_number, 2800000, md5('seed-remit-0001'), now())
+from public.virtual_accounts va join public.organisations o on o.id = va.org_id where o.slug = 'lagos-prime';
+
+-- Abuja Central: agent remittance received and allocated, and part of retailer-14's delivered order paid.
+do $$
+declare
+  v_ev jsonb;
+  v_order uuid;
+begin
+  v_ev := app.record_provider_event('mock', 'seed-remit-0002', 'AGENT REMIT WUSE', va.account_number, 2800000, md5('seed-remit-0002'), now())
+          from public.virtual_accounts va join public.organisations o on o.id = va.org_id where o.slug = 'abuja-central';
+  perform pg_temp.act_as('ac.admin');
+  perform app.allocate_receipt((v_ev->>'event')::uuid, 'agent_cash', pg_temp.usr('ac.agent1'), 2800000);
+  perform pg_temp.act_as('retailer14');
+  select o.id into v_order from public.orders o where o.retailer_org_id = pg_temp.org('retailer-14') and o.status = 'partially_delivered';
+  perform app.start_order_payment(v_order, 1000000, 0, 'seed:pay:retailer14');
   perform set_config('request.jwt.claims', '', false);
 end;
 $$;

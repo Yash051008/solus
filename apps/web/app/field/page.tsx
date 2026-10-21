@@ -3,7 +3,7 @@ import { Flash, Shell, Status, type FlashParams } from '@/components/shell';
 import { LocationFields } from '@/components/location-fields';
 import { requireSession } from '@/lib/session';
 import { showQty, skuMap } from '@/lib/catalogue';
-import { acceptShipment, confirmReturn, declineShipment, recordDelivery } from './actions';
+import { acceptShipment, confirmReturn, declineShipment, recordCash, recordDelivery } from './actions';
 import { AgentPanel } from './agent-panel';
 
 export default async function FieldPage({ searchParams }: { searchParams: FlashParams }) {
@@ -60,7 +60,14 @@ export default async function FieldPage({ searchParams }: { searchParams: FlashP
                   <strong>{shop?.name ?? 'Shop'}</strong>
                   {shop?.lat ? <span className="muted"> · {shop.lat.toFixed(5)}, {shop.lng?.toFixed(5)}</span> : null}
                   {done ? (
-                    <p>Delivered · invoiced {formatNaira(kobo(done.invoiced_kobo ?? '0'))} · geofence {done.geofence_ok ? 'OK' : `FAILED (${done.geofence_reason})`}</p>
+                    <>
+                      <p>Delivered · invoiced {formatNaira(kobo(done.invoiced_kobo ?? '0'))} · geofence {done.geofence_ok ? 'OK' : `FAILED (${done.geofence_reason})`}</p>
+                      <form action={recordCash} className="inline">
+                        <input type="hidden" name="orderId" value={orderId} /><input type="hidden" name="idempotencyKey" value={`web:cash:${orderId}:${done.id}`} />
+                        <label>Cash received from the shop (₦)<input name="naira" inputMode="decimal" size={8} required /></label>
+                        <button className="secondary" type="submit">Record cash</button>
+                      </form>
+                    </>
                   ) : (
                     <form action={recordDelivery} className="stack" style={{ maxWidth: 'none' }}>
                       <input type="hidden" name="shipmentId" value={s.id} /><input type="hidden" name="orderId" value={orderId} />

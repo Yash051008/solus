@@ -93,6 +93,9 @@ export function createOpsRepository(db: DbClient) {
         if (filter.carrierLocationIds) q = q.in('carrier_location_id', [...filter.carrierLocationIds]);
         return rows(await q);
       },
+      async myCarrierLocations(userId: string) {
+        return rows(await db.from('stock_locations').select('id, kind, org_id').eq('user_id', userId).in('kind', ['driver', 'agent']));
+      },
       async carriers(orgId: string) {
         return rows(await db.from('stock_locations').select('id, kind, user_id, profiles(full_name)').eq('org_id', orgId).in('kind', ['driver', 'agent']));
       },

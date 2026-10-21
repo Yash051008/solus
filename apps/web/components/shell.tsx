@@ -1,21 +1,22 @@
 import Link from 'next/link';
 import { signOut } from '@/app/login/actions';
 import { InboxLink } from './inbox-link';
+import { Icon, NavLinks } from './nav-links';
 
 export function Shell({ nav, children }: { nav?: { href: string; label: string }[]; children: React.ReactNode }) {
   return (
-    <>
-      <header className="top">
-        <Link href="/" className="brand">Solus</Link>
-        <nav>
-          {(nav ?? []).map((n) => <Link key={n.href} href={n.href}>{n.label}</Link>)}
-        </nav>
-        <InboxLink />
-        <Link href="/support">Support</Link>
-        <form action={signOut}><button className="secondary" type="submit">Sign out</button></form>
-      </header>
-      <main>{children}</main>
-    </>
+    <div className="app">
+      <aside className="sidebar">
+        <Link href="/" className="brand"><span className="logo">S</span><span>Solus</span></Link>
+        <nav className="navlist"><NavLinks nav={nav ?? []} /></nav>
+        <div className="navfoot">
+          <InboxLink />
+          <Link href="/support" className="navitem"><Icon name="support" /><span>Help</span></Link>
+          <form action={signOut}><button className="secondary signout" type="submit">Sign out</button></form>
+        </div>
+      </aside>
+      <main className="content">{children}</main>
+    </div>
   );
 }
 

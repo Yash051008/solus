@@ -5,7 +5,7 @@ import { signUp } from '../login/actions';
 export default async function SignupPage({ searchParams }: { searchParams: FlashParams }) {
   const { ok, error } = await searchParams;
   return (
-    <main>
+    <main className="auth">
       <h1>Create your account</h1>
       <p className="muted">After signing up you can register your shop, or ask to join a distributor as staff.</p>
       <Flash ok={ok} error={error} />

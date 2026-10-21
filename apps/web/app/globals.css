@@ -31,14 +31,12 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
 a { color: var(--accent); }
-header.top { display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
-header.top .brand { font-weight: 700; letter-spacing: .02em; }
-header.top nav { display: flex; gap: 14px; flex-wrap: wrap; flex: 1; }
-main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 64px; }
 h1 { font-size: 1.5rem; margin: 0 0 4px; }
 h2 { font-size: 1.1rem; margin: 28px 0 10px; }
 .muted { color: var(--muted); }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 12px 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin: 12px 0; box-shadow: 0 1px 2px rgb(0 0 0 / .04); }
+a.panel { display: block; text-decoration: none; color: inherit; }
+a.panel:hover { border-color: var(--accent); }
 .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -68,3 +66,32 @@ button.danger { background: var(--danger); color: #fff; }
 .stat { font-size: 1.6rem; font-weight: 600; }
 .badge.open { border-color: #b8860b; color: #b8860b; }
 .badge.resolved { border-color: var(--accent); color: var(--accent); }
+
+/* App layout: fixed side menu + full-width content (top bar on phones). */
+.app { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+.sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 4px; padding: 16px 12px;
+  background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.05rem; color: var(--text); text-decoration: none; padding: 4px 8px 16px; }
+.logo { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: var(--accent-text); font-weight: 800; }
+.navlist { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.navfoot { display: flex; flex-direction: column; gap: 2px; border-top: 1px solid var(--line); padding-top: 10px; }
+.navitem { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; color: var(--muted); text-decoration: none; font-size: .92rem; }
+.navitem:hover { background: var(--bg); color: var(--text); }
+.navitem.active { background: var(--ok-bg); color: var(--accent); font-weight: 600; }
+.navitem span:not(.count) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.count { margin-left: auto; background: var(--accent); color: var(--accent-text); border-radius: 99px; font-size: .72rem; padding: 1px 7px; font-weight: 600; }
+.signout { width: 100%; margin-top: 6px; }
+.content { padding: 28px 36px 64px; min-width: 0; }
+.content > * { max-width: 1280px; }
+.auth { max-width: 400px; margin: 10vh auto; padding: 0 16px; }
+
+@media (max-width: 800px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position: sticky; z-index: 10; height: auto; flex-direction: row; align-items: center; padding: 8px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .brand { padding: 0 6px; }
+  .brand span:not(.logo) { display: none; }
+  .navlist, .navfoot { flex-direction: row; border-top: 0; padding-top: 0; flex: none; }
+  .navitem { white-space: nowrap; }
+  .signout { width: auto; margin: 0; }
+  .content { padding: 18px 16px 48px; }
+}

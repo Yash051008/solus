@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 // Webhooks authenticate by signature, not session.
-const PUBLIC_PATHS = ['/login', '/signup', '/api/webhooks/'];
+const PUBLIC_PATHS = ['/login', '/signup', '/api/webhooks/', '/manifest.webmanifest', '/icon.svg'];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });

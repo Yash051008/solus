@@ -5,8 +5,9 @@ import { signIn } from './actions';
 export default async function LoginPage({ searchParams }: { searchParams: FlashParams }) {
   const { ok, error } = await searchParams;
   return (
-    <main>
-      <h1>Sign in to Solus</h1>
+    <main className="auth">
+      <div className="brand"><span className="logo">S</span><span>Solus</span></div>
+      <h1>Sign in</h1>
       <p className="muted">Distributors, branch staff, retailers and platform administrators.</p>
       <Flash ok={ok} error={error} />
       <form action={signIn} className="stack panel">

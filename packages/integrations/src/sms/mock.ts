@@ -20,6 +20,8 @@ export class MockSmsProvider implements SmsProvider {
     const providerMessageId = `mock-${createHash('sha256').update(message.reference).digest('hex').slice(0, 20)}`;
     const existing = inbox.find((m) => m.providerMessageId === providerMessageId);
     if (!existing) inbox.push({ ...message, providerMessageId, sentAt: new Date() });
+    // Local dev on a simulator/emulator has no SMS: MOCK_SMS_LOG=1 prints the "delivered" text to the server log.
+    if (!existing && process.env.MOCK_SMS_LOG === '1') console.info(`[mock sms] to ${message.to}: ${message.body}`);
     return { provider: this.name, providerMessageId };
   }
 

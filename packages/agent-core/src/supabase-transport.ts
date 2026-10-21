@@ -9,7 +9,7 @@ type Select = (table: string, columns: string, filters: Record<string, string | 
 export type MinimalClient = { rpc: Rpc; select: Select; userId: () => Promise<string | null> };
 
 function isNetwork(message: string): boolean {
-  return /fetch|network|timed? ?out|ECONNREFUSED|Failed to fetch|Network request failed/i.test(message);
+  return /fetch|network|timed? ?out|abort|ECONNREFUSED|Failed to fetch|Network request failed/i.test(message);
 }
 
 async function call<T>(p: Promise<{ data: unknown; error: { message: string; code?: string } | null }>): Promise<T> {

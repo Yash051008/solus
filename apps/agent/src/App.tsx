@@ -1,6 +1,6 @@
 // Solus Field: the offline-first agent app. Every action is saved to the phone's outbox first and synced
 // when there is signal. The server decides; rejected events stay visible and go to the manager's review queue.
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Crypto from 'expo-crypto';
@@ -53,7 +53,7 @@ function Login({ onDone }: { onDone: (orgId: string) => void }) {
     onDone(org);
   }
   return (
-    <SafeAreaView style={s.screen}>
+    <Screen>
       <StatusBar style="auto" />
       <Text style={s.h1}>Solus Field</Text>
       <Text style={s.muted}>Sign in once with signal. After that the app works offline.</Text>
@@ -61,7 +61,7 @@ function Login({ onDone }: { onDone: (orgId: string) => void }) {
       <TextInput style={s.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
       {error ? <Text style={s.error}>{error}</Text> : null}
       <Button label={busy ? 'Signing in…' : 'Sign in'} onPress={submit} disabled={busy} />
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -77,6 +77,7 @@ function Field({ orgId, onSignOut }: { orgId: string; onSignOut: () => void }) {
   const [skus, setSkus] = useState<SkuNames>({});
   const [status, setStatus] = useState('');
   const [syncing, setSyncing] = useState(false);
+  const [requestPending, setRequestPending] = useState(false);
 
   const refresh = useCallback(async () => {
     await engine.signIn(orgId);
@@ -84,6 +85,7 @@ function Field({ orgId, onSignOut }: { orgId: string; onSignOut: () => void }) {
     setEvents(await store.all());
     setCarried(await engine.estimatedCarried());
     setSkus(JSON.parse((await store.getMeta('skus')) ?? '{}') as SkuNames);
+    setRequestPending((await store.getMeta('requestPending')) === '1');
   }, [engine, orgId]);
 
   const sync = useCallback(async () => {
@@ -97,6 +99,9 @@ function Field({ orgId, onSignOut }: { orgId: string; onSignOut: () => void }) {
           names[k.id] = { code: k.code, name: k.name, cartonPieces: k.sku_uom.find((u) => u.uom_code === 'carton')?.pieces_per_uom ?? null };
         }
         await store.setMeta('skus', JSON.stringify(names));
+        // RLS limits an agent to their own requests.
+        const { data: reqs } = await supabase.from('stock_requests').select('id').eq('status', 'pending').limit(1);
+        await store.setMeta('requestPending', (reqs ?? []).length > 0 ? '1' : '');
         setStatus(`Synced: ${r.accepted} accepted, ${r.rejected} sent to review${r.deferred ? `, ${r.deferred} waiting` : ''}.`);
       } else {
         setStatus('No signal. Your records are saved on the phone and will sync later.');
@@ -120,17 +125,18 @@ function Field({ orgId, onSignOut }: { orgId: string; onSignOut: () => void }) {
       onDone={async (msg) => { setStatus(msg); setScreen('home'); await refresh(); void sync(); }} onBack={() => setScreen('home')} />;
   }
   if (screen === 'activity') return <Activity events={events} nameOf={nameOf} onBack={() => setScreen('home')} />;
-  if (screen === 'request') return <RequestStock orgId={orgId} skus={skus} onDone={async (msg) => { setStatus(msg); setScreen('home'); await sync(); }} onBack={() => setScreen('home')} />;
+  if (screen === 'request') return <RequestStock orgId={orgId} skus={skus} onDone={async (msg) => { setScreen('home'); await sync(); setStatus(msg); }} onBack={() => setScreen('home')} />;
 
   return (
-    <SafeAreaView style={s.screen}>
+    <Screen>
       <StatusBar style="auto" />
-      <ScrollView contentContainerStyle={{ gap: 12 }}>
+      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={{ gap: 12 }}>
         <Text style={s.h1}>Solus Field</Text>
         {status ? <Text style={s.note}>{status}</Text> : null}
         <View style={s.card}>
           <Text style={s.h2}>Stock run: {state?.shipment ? state.shipment.status.replaceAll('_', ' ') : 'none'}</Text>
           {state?.shipment?.note ? <Text style={s.error}>{state.shipment.note}</Text> : null}
+          {!state?.shipment && requestPending ? <Text style={s.muted}>Stock request sent. Waiting for your manager to approve it.</Text> : null}
           {state?.shipment?.status === 'awaiting_acceptance' ? <Text style={s.muted}>Go to the warehouse. Read the SMS code to the staff in person.</Text> : null}
           {[...carried].filter(([, n]) => n !== 0).map(([id, n]) => (
             <Text key={id} style={n < 0 ? s.error : undefined}>{nameOf(id)}: {n} pcs{n < 0 ? ' (more than recorded: needs review)' : ''}</Text>
@@ -141,10 +147,10 @@ function Field({ orgId, onSignOut }: { orgId: string; onSignOut: () => void }) {
         {state?.shipment?.status === 'open' ? <Button label="Record a cash sale" onPress={() => setScreen('sell')} /> : null}
         <Button label="Check in at a shop" onPress={() => setScreen('checkin')} secondary />
         <Button label={`Activity${rejected ? ` (${rejected} in review)` : ''}`} onPress={() => setScreen('activity')} secondary />
-        {!state?.shipment ? <Button label="Request stock (needs signal)" onPress={() => setScreen('request')} secondary /> : null}
+        {!state?.shipment && !requestPending ? <Button label="Request stock (needs signal)" onPress={() => setScreen('request')} secondary /> : null}
         <Button label="Sign out" onPress={onSignOut} secondary />
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -188,8 +194,8 @@ function Visit({ kind, engine, state, carried, nameOf, onDone, onBack }: {
   }
 
   return (
-    <SafeAreaView style={s.screen}>
-      <ScrollView contentContainerStyle={{ gap: 10 }}>
+    <Screen>
+      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={{ gap: 10 }}>
         <Text style={s.h1}>{kind === 'sell' ? 'Cash sale' : 'Check in'}</Text>
         <Text style={s.h2}>Shop</Text>
         {(state?.shops ?? []).map((shop) => (
@@ -214,14 +220,14 @@ function Visit({ kind, engine, state, carried, nameOf, onDone, onBack }: {
         <Button label="Save (works offline)" onPress={save} />
         <Button label="Back" onPress={onBack} secondary />
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 function Activity({ events, nameOf, onBack }: { events: OutboxEvent[]; nameOf: (id: string) => string; onBack: () => void }) {
   return (
-    <SafeAreaView style={s.screen}>
-      <ScrollView contentContainerStyle={{ gap: 8 }}>
+    <Screen>
+      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={{ gap: 8 }}>
         <Text style={s.h1}>Activity</Text>
         {[...events].reverse().map((e) => (
           <View key={e.eventId} style={s.card}>
@@ -235,7 +241,7 @@ function Activity({ events, nameOf, onBack }: { events: OutboxEvent[]; nameOf: (
         ))}
         <Button label="Back" onPress={onBack} secondary />
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -258,8 +264,8 @@ function RequestStock({ orgId, skus, onDone, onBack }: { orgId: string; skus: Sk
     onDone('Request sent to your branch manager.');
   }
   return (
-    <SafeAreaView style={s.screen}>
-      <ScrollView contentContainerStyle={{ gap: 8 }}>
+    <Screen>
+      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={{ gap: 8 }}>
         <Text style={s.h1}>Request stock</Text>
         {warehouses.map((w) => <Pressable key={w.id} onPress={() => setWh(w.id)} style={[s.choice, wh === w.id && s.choiceOn]}><Text>{w.name}</Text></Pressable>)}
         {Object.entries(skus).filter(([, v]) => v.cartonPieces).map(([id, v]) => (
@@ -270,7 +276,7 @@ function RequestStock({ orgId, skus, onDone, onBack }: { orgId: string; skus: Sk
         <Button label="Send request" onPress={submit} />
         <Button label="Back" onPress={onBack} secondary />
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -286,7 +292,13 @@ function Center({ children }: { children: React.ReactNode }) {
   return <SafeAreaView style={[s.screen, { justifyContent: 'center', alignItems: 'center' }]}>{children}</SafeAreaView>;
 }
 
+/** iOS SafeAreaView overrides padding, so the padding lives on an inner view. */
+function Screen({ children }: { children: ReactNode }) {
+  return <SafeAreaView style={s.safe}><View style={s.screen}>{children}</View></SafeAreaView>;
+}
+
 const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#f7f7f5' },
   screen: { flex: 1, padding: 16, gap: 12, backgroundColor: '#f7f7f5' },
   h1: { fontSize: 24, fontWeight: '700', marginTop: 8 },
   h2: { fontSize: 16, fontWeight: '600' },

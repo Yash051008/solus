@@ -2,6 +2,7 @@
 import type { ActiveMembership, MemberRole } from '@solus/core';
 import type { DbClient, Enums } from './client.ts';
 import { command, rows } from './client.ts';
+import { createOpsRepository } from './ops-repository.ts';
 
 export type Membership = ActiveMembership & {
   orgName: string;
@@ -12,6 +13,7 @@ export type Membership = ActiveMembership & {
 
 export function createRepository(db: DbClient) {
   return {
+    ...createOpsRepository(db),
     me: {
       async userId(): Promise<string | null> {
         const { data } = await db.auth.getUser();

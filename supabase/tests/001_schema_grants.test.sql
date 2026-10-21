@@ -77,7 +77,10 @@ select is(
        'register_device', 'sync_agent_events', 'review_accept_into_variance', 'review_dismiss',
        -- Phase 5b-1 commands
        'order_amount_due', 'allocate_receipt', 'set_credit_limit', 'start_order_payment', 'record_delivery_cash',
-       'repay_credit', 'reconcile_provider')),
+       'repay_credit', 'reconcile_provider',
+       -- Phase 6 commands / helpers
+       'manufacturer_summary', 'mark_notifications_read', 'open_ticket', 'post_ticket_message', 'resolve_ticket',
+       'round_div')),
   null,
   'authenticated can execute only allow-listed functions (no ledger primitives, no adapter-only functions)'
 );
@@ -104,12 +107,12 @@ select is(
   (select array_agg(t.tablename::text order by 1)
    from pg_tables t
    where t.schemaname = 'public'
-     and t.tablename not in ('stock_balances', 'account_balances')
+     and t.tablename not in ('stock_balances', 'account_balances', 'notifications')   -- derived from audited rows
      and not exists (
        select 1 from pg_trigger tg
        where tg.tgrelid = format('public.%I', t.tablename)::regclass and tg.tgname = 'audit_log')),
   null,
-  'every business table (all but the two projections) has the audit trigger'
+  'every business table (all but projections and derived notifications) has the audit trigger'
 );
 
 select ok(not has_function_privilege('authenticated', 'app.record_provider_event(text,text,text,text,bigint,text,timestamptz)', 'execute')

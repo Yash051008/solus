@@ -1,3 +1,4 @@
+import { formatNaira, kobo } from '@solus/core';
 import { Flash, Shell, Status, type FlashParams } from '@/components/shell';
 import { requireOrgRole } from '@/lib/session';
 import { createBrand, createSku } from './actions';
@@ -6,16 +7,31 @@ export default async function ManufacturerPage({ params, searchParams }: { param
   const { orgId } = await params;
   const { ok, error } = await searchParams;
   const { repo, membership } = await requireOrgRole(orgId, ['manufacturer_admin']);
-  const [brands, skus, distributors] = await Promise.all([
-    repo.catalogue.brands(orgId), repo.catalogue.skus(), repo.organisations.byKind('distributor'),
+  const [brands, skus, distributors, summary] = await Promise.all([
+    repo.catalogue.brands(orgId), repo.catalogue.skus(), repo.organisations.byKind('distributor'), repo.reports.manufacturerSummary(orgId),
   ]);
+  const byDist = new Map<string, { name: string; qty: number; revenue: bigint; onHand: number }>();
+  for (const r of summary) {
+    const e = byDist.get(r.distributor_org_id) ?? { name: r.distributor_name, qty: 0, revenue: 0n, onHand: 0 };
+    e.qty += Number(r.qty_pieces); e.revenue += BigInt(String(r.revenue_kobo)); e.onHand += Number(r.on_hand);
+    byDist.set(r.distributor_org_id, e);
+  }
   const brandName = new Map(brands.map((b) => [b.id, b.name]));
   const own = skus.filter((s) => s.manufacturer_org_id === orgId);
 
   return (
     <Shell nav={[{ href: `/manufacturer/${orgId}`, label: membership.orgName }]}>
-      <h1>{membership.orgName}: catalogue</h1>
+      <h1>{membership.orgName}</h1>
       <Flash ok={ok} error={error} />
+      <h2>Sell-out by distributor</h2>
+      <p className="muted">Totals only: no shop, person or order-level data is shared with manufacturers.</p>
+      <div className="panel table-wrap"><table>
+        <thead><tr><th>Distributor</th><th>Pieces sold</th><th>Sales value</th><th>Stock on hand (pcs)</th></tr></thead>
+        <tbody>{[...byDist.entries()].map(([id, d]) => (
+          <tr key={id}><td>{d.name}</td><td>{d.qty.toLocaleString('en-NG')}</td><td>{formatNaira(kobo(d.revenue))}</td><td>{d.onHand.toLocaleString('en-NG')}</td></tr>
+        ))}</tbody>
+      </table></div>
+      <h2>Catalogue</h2>
       <div className="panel table-wrap"><table>
         <thead><tr><th>Code</th><th>Name</th><th>Brand</th><th>Units</th><th>Status</th></tr></thead>
         <tbody>{own.map((s) => (

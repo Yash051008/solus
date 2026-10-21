@@ -3,7 +3,7 @@
 -- distributor B (abuja-central), in EVERY table. Plus positive scoping checks per role.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(325);
+select plan(343);
 
 create function pg_temp.login(p_handle text) returns void language plpgsql as $$
 begin
@@ -71,7 +71,8 @@ insert into table_keys values
   ('agent_devices', 'x.device_id::text'), ('sync_events', 'x.event_id::text'), ('agent_visits', 'x.id::text'),
   ('review_items', 'x.id::text'),
   ('virtual_accounts', 'x.id::text'), ('provider_events', 'x.id::text'), ('receipt_allocations', 'x.id::text'),
-  ('order_payments', 'x.id::text');
+  ('order_payments', 'x.id::text'),
+  ('notifications', 'x.id::text'), ('tickets', 'x.id::text'), ('ticket_messages', 'x.id::text');
 
 select is(
   (select array_agg(tablename::text order by 1) from pg_tables
@@ -145,7 +146,11 @@ union all select 'review_items', id::text from public.review_items where org_id 
 union all select 'virtual_accounts', id::text from public.virtual_accounts where org_id in (select id from b_orgs)
 union all select 'provider_events', id::text from public.provider_events where org_id in (select id from b_orgs)
 union all select 'receipt_allocations', id::text from public.receipt_allocations where org_id = (select id from b)
-union all select 'order_payments', id::text from public.order_payments where distributor_org_id = (select id from b);
+union all select 'order_payments', id::text from public.order_payments where distributor_org_id = (select id from b)
+union all select 'notifications', id::text from public.notifications where user_id in (select user_id from b_users)
+union all select 'tickets', id::text from public.tickets where distributor_org_id = (select id from b)
+union all select 'ticket_messages', m.id::text from public.ticket_messages m join public.tickets tk on tk.id = m.ticket_id
+          where tk.distributor_org_id = (select id from b);
 
 select is(
   (select array_agg(k.tbl order by 1) from table_keys k

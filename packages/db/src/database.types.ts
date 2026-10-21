@@ -32,6 +32,9 @@ export type Database = {
 "apply_sync_event":
 { Args: { "p_dev": Omit<Database["public"]['Tables']["agent_devices"]['Row'], Database["public"]['Tables']["agent_devices"]['ComputedFields']>,"p_event": Json }; Returns: Json
                            },
+"can_handle_ticket":
+{ Args: { "p_ticket": Omit<Database["public"]['Tables']["tickets"]['Row'], Database["public"]['Tables']["tickets"]['ComputedFields']> }; Returns: boolean
+                           },
 "can_manage_branch":
 { Args: { "p_branch_id": string }; Returns: boolean
                            },
@@ -168,8 +171,16 @@ export type Database = {
 "make_point":
 { Args: { "p_lat": number,"p_lng": number }; Returns: unknown
                            },
+"manufacturer_summary":
+{ Args: { "p_manufacturer_id": string }; Returns: {
+              "distributor_name": string,"distributor_org_id": string,"on_hand": number,"qty_pieces": number,"revenue_kobo": number,"sku_id": string
+            }[]
+                           },
 "mark_batch_packed":
 { Args: { "p_batch_id": string }; Returns: undefined
+                           },
+"mark_notifications_read":
+{ Args: { "p_ids"?: (string)[] }; Returns: number
                            },
 "my_branch_ids":
 { Args: { "p_roles": (Database["public"]['Enums']["member_role"])[] }; Returns: (string)[]
@@ -183,14 +194,23 @@ export type Database = {
 "my_org_ids_with_role":
 { Args: { "p_roles": (Database["public"]['Enums']["member_role"])[] }; Returns: (string)[]
                            },
+"notify":
+{ Args: { "p_body"?: string,"p_kind": string,"p_link"?: string,"p_org": string,"p_title": string,"p_user": string }; Returns: undefined
+                           },
 "onboard_organisation":
 { Args: { "p_admin_user_id": string,"p_kind": Database["public"]['Enums']["org_kind"],"p_name": string,"p_slug": string }; Returns: string
                            },
 "open_otp_challenge":
 { Args: { "p_initiator": string,"p_payload_hash"?: string,"p_purpose": string,"p_recipient": string,"p_subject_id": string,"p_subject_kind": string }; Returns: string
                            },
+"open_ticket":
+{ Args: { "p_body": string,"p_category": string,"p_distributor_id": string,"p_opener_org_id": string,"p_order_id"?: string,"p_subject": string }; Returns: string
+                           },
 "order_amount_due":
 { Args: { "p_order_id": string }; Returns: number
+                           },
+"org_users":
+{ Args: { "p_branch"?: string,"p_org": string,"p_roles": (Database["public"]['Enums']["member_role"])[] }; Returns: string[]
                            },
 "piece_price_kobo":
 { Args: { "p_distributor_id": string,"p_sku_id": string }; Returns: number
@@ -203,6 +223,9 @@ export type Database = {
                            },
 "post_stock_movement":
 { Args: { "p_group_id": string,"p_idempotency_key"?: string,"p_location_id": string,"p_qty": number,"p_reason"?: string,"p_ref_id"?: string,"p_ref_kind"?: string,"p_sign"?: number,"p_sku_id": string,"p_type": Database["public"]['Enums']["movement_type"] }; Returns: string
+                           },
+"post_ticket_message":
+{ Args: { "p_body": string,"p_ticket_id": string }; Returns: string
                            },
 "provision_virtual_account":
 { Args: { "p_account_number": string,"p_bank_name": string,"p_org_id": string,"p_provider": string,"p_provider_ref": string }; Returns: string
@@ -280,6 +303,9 @@ export type Database = {
                            },
 "reserve_order":
 { Args: { "p_order_id": string,"p_warehouse_id": string }; Returns: undefined
+                           },
+"resolve_ticket":
+{ Args: { "p_resolution": string,"p_ticket_id": string }; Returns: undefined
                            },
 "resolve_transfer_shortage":
 { Args: { "p_reason": string,"p_transfer_id": string }; Returns: undefined
@@ -979,6 +1005,38 @@ isOneToOne: false
       referencedColumns: ["id","branch_id"]
     },{
       foreignKeyName: "memberships_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"notifications": {
+                  Row: {
+                    "body": string | null,"created_at": string,"id": string,"kind": string,"link": string | null,"org_id": string | null,"read_at": string | null,"title": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body"?: string | null,"created_at"?: string,"id"?: string,"kind": string,"link"?: string | null,"org_id"?: string | null,"read_at"?: string | null,"title": string,"user_id": string
+                  }
+                  Update: {
+                    "body"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"link"?: string | null,"org_id"?: string | null,"read_at"?: string | null,"title"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
@@ -2007,6 +2065,100 @@ isOneToOne: false
       referencedColumns: ["id","org_id"]
     }
                   ]
+                },"ticket_messages": {
+                  Row: {
+                    "author_id": string,"body": string,"created_at": string,"id": string,"ticket_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id": string,"body": string,"created_at"?: string,"id"?: string,"ticket_id": string
+                  }
+                  Update: {
+                    "author_id"?: string,"body"?: string,"created_at"?: string,"id"?: string,"ticket_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "ticket_messages_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "ticket_messages_ticket_id_fkey"
+      columns: ["ticket_id"]
+isOneToOne: false
+      referencedRelation: "tickets"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"tickets": {
+                  Row: {
+                    "category": string,"created_at": string,"dispute_id": string | null,"distributor_org_id": string,"id": string,"opened_by": string,"opener_org_id": string,"order_id": string | null,"resolution": string | null,"resolved_at": string | null,"resolved_by": string | null,"status": string,"subject": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "category": string,"created_at"?: string,"dispute_id"?: string | null,"distributor_org_id": string,"id"?: string,"opened_by": string,"opener_org_id": string,"order_id"?: string | null,"resolution"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: string,"subject": string
+                  }
+                  Update: {
+                    "category"?: string,"created_at"?: string,"dispute_id"?: string | null,"distributor_org_id"?: string,"id"?: string,"opened_by"?: string,"opener_org_id"?: string,"order_id"?: string | null,"resolution"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: string,"subject"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "tickets_dispute_id_fkey"
+      columns: ["dispute_id"]
+isOneToOne: true
+      referencedRelation: "order_disputes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tickets_distributor_org_id_fkey"
+      columns: ["distributor_org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tickets_distributor_org_id_fkey"
+      columns: ["distributor_org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tickets_opened_by_fkey"
+      columns: ["opened_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "tickets_opener_org_id_fkey"
+      columns: ["opener_org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tickets_opener_org_id_fkey"
+      columns: ["opener_org_id"]
+isOneToOne: false
+      referencedRelation: "v_organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tickets_order_id_fkey"
+      columns: ["order_id"]
+isOneToOne: false
+      referencedRelation: "orders"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tickets_order_id_fkey"
+      columns: ["order_id"]
+isOneToOne: false
+      referencedRelation: "v_orders"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tickets_resolved_by_fkey"
+      columns: ["resolved_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"transfer_lines": {
                   Row: {
                     "damaged": number | null,"id": string,"qty_pieces": number,"received": number | null,"sku_id": string,"transfer_id": string
@@ -2250,6 +2402,20 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"v_agent_leaderboard": {
+                  Row: {
+                    "agent_user_id": string | null,"full_name": string | null,"org_id": string | null,"pending_variance": number | null,"sales_count": number | null,"sales_kobo": number | null,"visits": number | null,"visits_in_geofence": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "memberships_user_id_fkey"
+      columns: ["agent_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"v_credit_positions": {
                   Row: {
                     "credit_limit_kobo": number | null,"distributor_org_id": string | null,"drawn_kobo": number | null,"receivable_kobo": number | null,"relationship_id": string | null,"retailer_org_id": string | null
@@ -2276,6 +2442,32 @@ isOneToOne: true
 isOneToOne: false
       referencedRelation: "sku_uom"
       referencedColumns: ["sku_id","uom_code"]
+    }
+                  ]
+                },"v_inventory_value": {
+                  Row: {
+                    "location_id": string | null,"location_kind": Database["public"]['Enums']["location_kind"] | null,"on_hand": number | null,"org_id": string | null,"reserved": number | null,"sku_id": string | null,"value_kobo": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "location_id"?: string | null,"location_kind"?: Database["public"]['Enums']["location_kind"] | null,"on_hand"?: number | null,"org_id"?: string | null,"reserved"?: number | null,"sku_id"?: string | null,"value_kobo"?: never
+                         }
+                        Update: {
+                           "location_id"?: string | null,"location_kind"?: Database["public"]['Enums']["location_kind"] | null,"on_hand"?: number | null,"org_id"?: string | null,"reserved"?: number | null,"sku_id"?: string | null,"value_kobo"?: never
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "stock_balances_location_id_org_id_fkey"
+      columns: ["location_id","org_id"]
+isOneToOne: false
+      referencedRelation: "stock_locations"
+      referencedColumns: ["id","org_id"]
+    },{
+      foreignKeyName: "stock_balances_sku_id_fkey"
+      columns: ["sku_id"]
+isOneToOne: false
+      referencedRelation: "skus"
+      referencedColumns: ["id"]
     }
                   ]
                 },"v_orders": {
@@ -2318,6 +2510,14 @@ isOneToOne: false
                         Relationships: [
                     
                   ]
+                },"v_sales_daily": {
+                  Row: {
+                    "channel": string | null,"day": string | null,"org_id": string | null,"revenue_kobo": number | null,"transactions": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
                 },"v_shipment_reconciliation": {
                   Row: {
                     "damaged": number | null,"org_id": string | null,"picked_up": number | null,"remaining": number | null,"returned": number | null,"shipment_id": string | null,"sku_id": string | null,"sold": number | null,"status": string | null
@@ -2343,6 +2543,14 @@ isOneToOne: false
       referencedRelation: "skus"
       referencedColumns: ["id"]
     }
+                  ]
+                },"v_sku_performance": {
+                  Row: {
+                    "org_id": string | null,"qty_pieces": number | null,"revenue_kobo": number | null,"sku_id": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
                   ]
                 },"v_territories": {
                   Row: {

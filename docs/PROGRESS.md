@@ -8,17 +8,20 @@
 | 4 | Catalogue, inventory, transfers, pull flow + routing, batching/packing UI, delivery + e-POD + partial/missing | **Done** (4a DB `9278024`, 4b screens `4c4fcc9`..`6bd1df1`) | 2026-10-21 |
 | 5a | Push: request → approve → OTP handover → return → reconciliation (variance approval, close blocking) | **Done** (`7520c72`, `f04d1de`, `b9911bc`) | 2026-10-22 |
 | 5b | Wallet ledger, trade credit + credit OTP, payment webhooks + reconciliation, offline agent app + sync | **Done** (5b-2 `3623d19`, 5b-1 this commit) | 2026-10-22 |
-| 6 | Dashboards, notifications, support tickets, hardening, E2E of both flows on the same stock | Not started | |
+| 6 | Dashboards, notifications, support tickets, hardening, E2E of both flows on the same stock | 6a done (this commit); 6b next | 2026-10-22 |
 
 ## ▶ Resume here
 Autonomous run (user instruction, 2026-10-22): build 5b-2 → 5b-1 → Phase 6 without waiting for "next";
 after each step typecheck + `npm run test:all` + commit + update this section. Final report at the end.
-- **Done:** 5b-2 offline agent app (`3623d19`), 5b-1 payments (this commit).
-- **Next:** Phase 6, in two commits. (a) dashboards (sales, inventory, agent leaderboard, SKU performance,
-  financial, manufacturer aggregates without retailer data), notifications (domain events → per-user inbox),
-  support tickets (with delivery-dispute resolution). (b) hardening (index audit for policy/FK columns,
-  security checks) and a final end-to-end test of pull + push on the same stock. Then the final report.
-- Last verified: `npm run test:all` passes (637 pgTAP, 43 Node tests, typecheck, web build, Expo Android bundle).
+- **Done:** 5b-2 offline agent app (`3623d19`), 5b-1 payments (`5382057`), 6a dashboards + notifications +
+  support (this commit): migration `20261028000100`, pgTAP `013`, pages `/inbox`, `/support`,
+  `/distributor/[id]/support`, the dashboard at `/distributor/[id]`, and sell-out totals on `/manufacturer/[id]`.
+- **Next:** 6b. Hardening: pgTAP check that every security-definer function pins `search_path`, an index
+  audit for FK/policy columns. Then one Node E2E test of pull + push on the same SKU and warehouse
+  (order → batch → driver → e-POD → wallet + credit OTP payment; agent request → OTP handover → offline
+  sync with duplicate + rejection → accept into variance → return OTP → resolve), with invariants checked
+  at the end. Then `db:reset` and the final report.
+- Last verified: `npm run test:all` passes (671 pgTAP, 43 Node tests, typecheck, web build, Expo Android bundle).
 - Run locally: `npm run db:start` → `npm run db:reset` → `npm run web:env` → `npm run dev --workspace @solus/web`
   (http://localhost:3100). Phone: `npm run agent:env` → `npm run agent:start`, then scan the QR with Expo Go
   (same Wi-Fi). Password `SolusDev-2026!` for every seeded user (`@solus.test`).
@@ -36,6 +39,10 @@ after each step typecheck + `npm run test:all` + commit + update this section. F
   distributor's VA lands in `unallocated_receipts` until an admin allocates it. Partial payments are
   allowed. Starting a new payment cancels a pending (unconfirmed) one. Credit limits are set by the
   distributor admin only.
+- Notifications are an in-app inbox only. They're written by DB triggers on domain state changes; SMS/push
+  fan-out is left for later. The manufacturer sees per-distributor totals (pieces, sales value, stock) only.
+  Tickets are opened by shops against a distributor they're active with. A delivery dispute
+  automatically opens a ticket, and resolving that ticket resolves the dispute.
 - KYC level doesn't gate credit yet. The limit is the control (configurable gating left for later).
 
 ## Phase 5b-1: what exists

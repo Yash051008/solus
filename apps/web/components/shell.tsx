@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { signOut } from '@/app/login/actions';
+import { InboxLink } from './inbox-link';
 
 export function Shell({ nav, children }: { nav?: { href: string; label: string }[]; children: React.ReactNode }) {
   return (
@@ -9,6 +10,8 @@ export function Shell({ nav, children }: { nav?: { href: string; label: string }
         <nav>
           {(nav ?? []).map((n) => <Link key={n.href} href={n.href}>{n.label}</Link>)}
         </nav>
+        <InboxLink />
+        <Link href="/support">Support</Link>
         <form action={signOut}><button className="secondary" type="submit">Sign out</button></form>
       </header>
       <main>{children}</main>

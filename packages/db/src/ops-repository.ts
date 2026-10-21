@@ -219,5 +219,51 @@ export function createOpsRepository(db: DbClient) {
       allocateReceipt: (eventId: string, targetKind: 'agent_cash' | 'shop_debt', targetId: string, amountKobo: bigint) =>
         command(db, 'allocate_receipt', { p_event_id: eventId, p_target_kind: targetKind, p_target_id: targetId, p_amount_kobo: amountKobo.toString() as unknown as number }),
     },
+    reports: {
+      async salesDaily(orgId: string) {
+        return rows(await db.from('v_sales_daily').select('day, channel, revenue_kobo::text, transactions').eq('org_id', orgId).order('day'));
+      },
+      async skuPerformance(orgId: string) {
+        return rows(await db.from('v_sku_performance').select('sku_id, qty_pieces, revenue_kobo::text').eq('org_id', orgId));
+      },
+      async leaderboard(orgId: string) {
+        return rows(await db.from('v_agent_leaderboard').select('agent_user_id, full_name, sales_kobo::text, sales_count, visits, visits_in_geofence, pending_variance').eq('org_id', orgId));
+      },
+      async inventoryValue(orgId: string) {
+        return rows(await db.from('v_inventory_value').select('location_id, location_kind, sku_id, on_hand, value_kobo::text').eq('org_id', orgId));
+      },
+      manufacturerSummary: (manufacturerId: string) =>
+        command(db, 'manufacturer_summary', { p_manufacturer_id: manufacturerId }) as Promise<unknown> as
+          Promise<{ distributor_org_id: string; distributor_name: string; sku_id: string; qty_pieces: number; revenue_kobo: number; on_hand: number }[]>,
+    },
+    notifications: {
+      async list(limit = 50) {
+        return rows(await db.from('notifications').select('id, kind, title, body, link, read_at, created_at').order('created_at', { ascending: false }).limit(limit));
+      },
+      async unread() {
+        const { count } = await db.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null);
+        return count ?? 0;
+      },
+      markRead: (ids?: string[]) => command(db, 'mark_notifications_read', ids ? { p_ids: ids } : {}),
+    },
+    support: {
+      async tickets(filter: { distributorId?: string; openerOrgIds?: string[]; status?: string }) {
+        let q = db.from('tickets').select('id, opener_org_id, distributor_org_id, subject, category, order_id, status, resolution, created_at, resolved_at')
+          .order('created_at', { ascending: false }).limit(100);
+        if (filter.distributorId) q = q.eq('distributor_org_id', filter.distributorId);
+        if (filter.openerOrgIds) q = q.in('opener_org_id', filter.openerOrgIds);
+        if (filter.status) q = q.eq('status', filter.status);
+        return rows(await q);
+      },
+      async messages(ticketIds: readonly string[]) {
+        if (ticketIds.length === 0) return [];
+        return rows(await db.from('ticket_messages').select('id, ticket_id, author_id, body, created_at, profiles(full_name)').in('ticket_id', [...ticketIds]).order('created_at'));
+      },
+      open: (i: { openerOrgId: string; distributorId: string; subject: string; category: string; body: string; orderId?: string }) =>
+        command(db, 'open_ticket', { p_opener_org_id: i.openerOrgId, p_distributor_id: i.distributorId, p_subject: i.subject, p_category: i.category,
+          p_body: i.body, ...(i.orderId ? { p_order_id: i.orderId } : {}) }),
+      reply: (ticketId: string, body: string) => command(db, 'post_ticket_message', { p_ticket_id: ticketId, p_body: body }),
+      resolve: (ticketId: string, resolution: string) => command(db, 'resolve_ticket', { p_ticket_id: ticketId, p_resolution: resolution }),
+    },
   };
 }

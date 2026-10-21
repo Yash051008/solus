@@ -9,6 +9,8 @@
   --danger: #a3261e;
   --ok-bg: #e7f4ec;
   --err-bg: #fbeae8;
+  --chart: #16804f;   /* validated: dataviz palette checks, light surface */
+  --grid: #ebebe6;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -22,6 +24,8 @@
     --danger: #ef8a80;
     --ok-bg: #16301f;
     --err-bg: #3a1a17;
+    --chart: #3aa572; /* validated: dataviz palette checks, dark surface */
+    --grid: #2a2a27;
   }
 }
 * { box-sizing: border-box; }
@@ -55,3 +59,12 @@ button.danger { background: var(--danger); color: #fff; }
 .badge.rejected, .badge.suspended { border-color: var(--danger); color: var(--danger); }
 .stack { display: grid; gap: 10px; max-width: 420px; }
 .table-wrap { overflow-x: auto; }
+
+.bars { display: flex; align-items: flex-end; gap: 2px; height: 160px; border-bottom: 1px solid var(--grid); padding-top: 8px; }
+.bars .bar { flex: 1; min-width: 6px; background: var(--chart); border-radius: 4px 4px 0 0; position: relative; }
+.bars .bar:hover, .bars .bar:focus { outline: 2px solid var(--text); outline-offset: 1px; }
+.bars-axis { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-top: 4px; }
+.hbar { height: 8px; background: var(--chart); border-radius: 0 4px 4px 0; }
+.stat { font-size: 1.6rem; font-weight: 600; }
+.badge.open { border-color: #b8860b; color: #b8860b; }
+.badge.resolved { border-color: var(--accent); color: var(--accent); }
